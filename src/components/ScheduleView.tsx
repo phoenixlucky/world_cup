@@ -488,21 +488,21 @@ export function ScheduleView() {
                   const icon = isClosing ? '🎆' : '🎭'
                   const label = isClosing ? '闭幕式' : `${d?.host || ''}开幕式`
                   return (
-                    <div key={m.id} className="px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
-                      <div className="flex-shrink-0 w-24 text-center sm:text-left">
+                    <div key={m.id} className="px-4 py-6 flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+                      <div className="flex-shrink-0 w-24 text-center">
                         <div className="text-yellow-400 font-mono text-base font-bold">{bjTime.date}<br/>{bjTime.time}</div>
                         <div className="text-slate-500 font-mono text-xs">
                           {m.localTime}<span className="text-slate-600"> UTC{m.utcOffset >= 0 ? '+' : ''}{m.utcOffset}</span>
                         </div>
                       </div>
-                      <div className="flex flex-col min-w-0 flex-1 px-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{icon}</span>
-                          <span className="text-white text-base font-bold">{label}</span>
-                          {d?.theme && <span className="text-yellow-400 text-xs bg-yellow-400/10 px-1.5 py-0.5 rounded">{d.theme}</span>}
+                      <div className="flex flex-col items-center text-center min-w-0 flex-1 px-2">
+                        <div className="flex items-center gap-2 justify-center">
+                          <span className="text-2xl">{icon}</span>
+                          <span className="text-white text-lg font-bold">{label}</span>
+                          {d?.theme && <span className="text-yellow-400 text-xs bg-yellow-400/10 px-2 py-0.5 rounded">{d.theme}</span>}
                         </div>
                         {d?.artists && (
-                          <p className="text-slate-400 text-xs mt-1 leading-relaxed">{d.artists}</p>
+                          <p className="text-slate-400 text-sm mt-2 leading-relaxed max-w-lg">{d.artists}</p>
                         )}
                       </div>
                       <div className="text-slate-400 text-sm flex-shrink-0 text-right leading-snug hidden sm:block">
