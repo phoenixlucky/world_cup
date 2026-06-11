@@ -6,6 +6,7 @@ import { useTeamData } from '../hooks/useTeamData'
 import { computeScores, sortScores, DEFAULT_WEIGHTS, type Weights } from '../engine/scorer'
 import { WeightPanel } from '../components/WeightPanel'
 import { TeamRankingTable } from '../components/TeamRankingTable'
+import { FlagImg } from '../components/FlagImg'
 
 export function HomePage() {
   const { teams, loading, source } = useTeamData()
@@ -20,8 +21,9 @@ export function HomePage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">
-          🇨🇦🇲🇽🇺🇸 2026 世界杯球队综合评分
+        <h1 className="flex items-center gap-1 text-2xl sm:text-3xl font-bold text-white">
+          <FlagImg code="CA" size={24} /><FlagImg code="MX" size={24} /><FlagImg code="US" size={24} />
+          2026 世界杯球队综合评分
         </h1>
         <p className="text-slate-400 text-sm mt-1">
           基于 7 维加权模型实时预测 · 数据来源: {source === 'api:football-data' ? 'football-data.org' : '静态种子数据'}

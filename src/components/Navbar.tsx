@@ -2,6 +2,7 @@
  * Navbar — top navigation bar
  */
 import { NavLink } from 'react-router-dom'
+import { FlagImg } from './FlagImg'
 
 const links = [
   { to: '/', label: '📊 排名', title: '综合评分排行榜' },
@@ -16,8 +17,9 @@ export function Navbar() {
     <nav className="bg-slate-900/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14">
-          <span className="text-lg font-bold text-white tracking-tight whitespace-nowrap">
-            🇨🇦🇲🇽🇺🇸 2026 世界杯预测
+          <span className="flex items-center gap-1 text-lg font-bold text-white tracking-tight whitespace-nowrap">
+            <FlagImg code="CA" size={16} /><FlagImg code="MX" size={16} /><FlagImg code="US" size={16} />
+            2026 世界杯预测
           </span>
           <div className="flex gap-1 overflow-x-auto">
             {links.map(l => (
