@@ -27,6 +27,7 @@ interface Match {
   city: string         // Wikipedia city name
   round: 'ceremony' | 'group' | 'r32' | 'r16' | 'qf' | 'sf' | '3rd' | 'final'
   group?: string
+  ceremonyDetail?: { host: string; theme: string; artists: string }
 }
 
 const roundLabels: Record<string, string> = {
@@ -227,18 +228,62 @@ function localToBeijing(date: string, time: string, offset: number): { date: str
 function buildAllMatches(): Match[] {
   const matches: Match[] = []
 
-  // ── Opening Ceremony ─────────────────────────────────
-  const openVi = venueMap['阿兹特克体育场']
+  // ── Opening Ceremonies (3 host nations) ──────────────
+  // Mexico — Azteca Stadium
+  const mxVi = venueMap['阿兹特克体育场']
   matches.push({
-    id: 'ceremony-opening',
+    id: 'ceremony-mx',
     date: '6月11日',
     dateNum: parseDateNum('6月11日'),
-    localTime: '12:00',
-    utcOffset: openVi.utcOffset,
+    localTime: '11:30',
+    utcOffset: mxVi.utcOffset,
     home: '', away: '',
-    venue: openVi.venue,
-    city: openVi.city,
+    venue: mxVi.venue,
+    city: mxVi.city,
     round: 'ceremony',
+    ceremonyDetail: {
+      host: '墨西哥',
+      theme: '拉丁狂欢',
+      artists: '夏奇拉（Shakira）领衔演唱官方主题曲《Dai Dai》；J·巴尔文（J Balvin）等众多拉丁美洲艺人助阵，包含原住民表演和无人机灯光秀',
+    },
+  })
+
+  // Canada — BMO Field
+  const caVi = venueMap['BMO球场']
+  matches.push({
+    id: 'ceremony-ca',
+    date: '6月12日',
+    dateNum: parseDateNum('6月12日'),
+    localTime: '13:30',
+    utcOffset: caVi.utcOffset,
+    home: '', away: '',
+    venue: caVi.venue,
+    city: caVi.city,
+    round: 'ceremony',
+    ceremonyDetail: {
+      host: '加拿大',
+      theme: '文化马赛克',
+      artists: '艾拉妮丝·莫莉塞特（Alanis Morissette）和迈克尔·布布莱（Michael Bublé）等加拿大知名音乐人登台',
+    },
+  })
+
+  // USA — SoFi Stadium
+  const usVi = venueMap['SoFi体育场']
+  matches.push({
+    id: 'ceremony-us',
+    date: '6月12日',
+    dateNum: parseDateNum('6月12日'),
+    localTime: '16:30',
+    utcOffset: usVi.utcOffset,
+    home: '', away: '',
+    venue: usVi.venue,
+    city: usVi.city,
+    round: 'ceremony',
+    ceremonyDetail: {
+      host: '美国',
+      theme: '视觉盛宴',
+      artists: '美国流行天后凯蒂·佩里（Katy Perry）以及韩国女团 Blackpink 成员 LISA 登台献艺',
+    },
   })
 
   // ── Group stage ───────────────────────────────────────
@@ -301,6 +346,11 @@ function buildAllMatches(): Match[] {
     venue: closeVi.venue,
     city: closeVi.city,
     round: 'ceremony',
+    ceremonyDetail: {
+      host: '闭幕式',
+      theme: '告别之夜',
+      artists: '冠军颁奖典礼及闭幕表演',
+    },
   })
 
   return matches
@@ -433,20 +483,27 @@ export function ScheduleView() {
                 }
 
                 if (m.round === 'ceremony') {
-                  const isOpening = m.id === 'ceremony-opening'
+                  const d = m.ceremonyDetail
+                  const isClosing = m.id === 'ceremony-closing'
+                  const icon = isClosing ? '🎆' : '🎭'
+                  const label = isClosing ? '闭幕式' : `${d?.host || ''}开幕式`
                   return (
-                    <div key={m.id} className="px-4 py-4 flex items-center gap-3">
-                      <div className="flex-shrink-0 w-24 text-center">
+                    <div key={m.id} className="px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                      <div className="flex-shrink-0 w-24 text-center sm:text-left">
                         <div className="text-yellow-400 font-mono text-base font-bold">{bjTime.date}<br/>{bjTime.time}</div>
                         <div className="text-slate-500 font-mono text-xs">
                           {m.localTime}<span className="text-slate-600"> UTC{m.utcOffset >= 0 ? '+' : ''}{m.utcOffset}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 min-w-0 flex-1 justify-center">
-                        <span className="text-2xl">{isOpening ? '🎭' : '🎆'}</span>
-                        <span className="text-white text-base font-bold">
-                          {isOpening ? '开幕式' : '闭幕式'}
-                        </span>
+                      <div className="flex flex-col min-w-0 flex-1 px-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{icon}</span>
+                          <span className="text-white text-base font-bold">{label}</span>
+                          {d?.theme && <span className="text-yellow-400 text-xs bg-yellow-400/10 px-1.5 py-0.5 rounded">{d.theme}</span>}
+                        </div>
+                        {d?.artists && (
+                          <p className="text-slate-400 text-xs mt-1 leading-relaxed">{d.artists}</p>
+                        )}
                       </div>
                       <div className="text-slate-400 text-sm flex-shrink-0 text-right leading-snug hidden sm:block">
                         {m.venue}<br /><span className="text-slate-500">{m.city}</span>
