@@ -25,12 +25,12 @@ interface Match {
   away: string
   venue: string        // Wikipedia venue name
   city: string         // Wikipedia city name
-  round: 'group' | 'r32' | 'r16' | 'qf' | 'sf' | '3rd' | 'final'
+  round: 'ceremony' | 'group' | 'r32' | 'r16' | 'qf' | 'sf' | '3rd' | 'final'
   group?: string
 }
 
 const roundLabels: Record<string, string> = {
-  group: '小组赛', r32: '32 强', r16: '16 强',
+  ceremony: '仪式', group: '小组赛', r32: '32 强', r16: '16 强',
   qf: '四分之一决赛', sf: '半决赛', '3rd': '季军赛', final: '决赛',
 }
 
@@ -227,6 +227,21 @@ function localToBeijing(date: string, time: string, offset: number): { date: str
 function buildAllMatches(): Match[] {
   const matches: Match[] = []
 
+  // ── Opening Ceremony ─────────────────────────────────
+  const openVi = venueMap['阿兹特克体育场']
+  matches.push({
+    id: 'ceremony-opening',
+    date: '6月11日',
+    dateNum: parseDateNum('6月11日'),
+    localTime: '12:00',
+    utcOffset: openVi.utcOffset,
+    home: '', away: '',
+    venue: openVi.venue,
+    city: openVi.city,
+    round: 'ceremony',
+  })
+
+  // ── Group stage ───────────────────────────────────────
   for (const [g, raw] of Object.entries(groupMatches)) {
     raw.forEach(([date, time, venueKey, home, away], mi) => {
       const vi = venueMap[venueKey]
@@ -273,6 +288,20 @@ function buildAllMatches(): Match[] {
       })
     }
   }
+
+  // ── Closing Ceremony ────────────────────────────────
+  const closeVi = venueMap['大都会人寿体育场']
+  matches.push({
+    id: 'ceremony-closing',
+    date: '7月19日',
+    dateNum: parseDateNum('7月19日'),
+    localTime: '20:00',
+    utcOffset: closeVi.utcOffset,
+    home: '', away: '',
+    venue: closeVi.venue,
+    city: closeVi.city,
+    round: 'ceremony',
+  })
 
   return matches
 }
@@ -401,6 +430,29 @@ export function ScheduleView() {
                 } else if (!past && home && away) {
                   const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
                   scoreContent = <span className="text-orange-400 font-bold text-lg">预测 {ph}-{pa}</span>
+                }
+
+                if (m.round === 'ceremony') {
+                  const isOpening = m.id === 'ceremony-opening'
+                  return (
+                    <div key={m.id} className="px-4 py-4 flex items-center gap-3">
+                      <div className="flex-shrink-0 w-24 text-center">
+                        <div className="text-yellow-400 font-mono text-base font-bold">{bjTime.date}<br/>{bjTime.time}</div>
+                        <div className="text-slate-500 font-mono text-xs">
+                          {m.localTime}<span className="text-slate-600"> UTC{m.utcOffset >= 0 ? '+' : ''}{m.utcOffset}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 min-w-0 flex-1 justify-center">
+                        <span className="text-2xl">{isOpening ? '🎭' : '🎆'}</span>
+                        <span className="text-white text-base font-bold">
+                          {isOpening ? '开幕式' : '闭幕式'}
+                        </span>
+                      </div>
+                      <div className="text-slate-400 text-sm flex-shrink-0 text-right leading-snug hidden sm:block">
+                        {m.venue}<br /><span className="text-slate-500">{m.city}</span>
+                      </div>
+                    </div>
+                  )
                 }
 
                 if (m.round !== 'group' && !home && !away) {
