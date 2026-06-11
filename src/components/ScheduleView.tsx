@@ -409,7 +409,18 @@ export function ScheduleView() {
       if (!map.has(m.date)) map.set(m.date, [])
       map.get(m.date)!.push(m)
     }
-    return Array.from(map.entries()).sort(([a], [b]) => parseDateNum(a) - parseDateNum(b))
+        // Sort matches within each date by UTC time so ceremonies/matches appear chronologically
+        const sorted = Array.from(map.entries())
+          .sort(([a], [b]) => parseDateNum(a) - parseDateNum(b))
+          .map(([date, ms]) => [
+            date,
+            ms.sort((a, b) => {
+              const utcA = (parseInt(a.localTime.split(':')[0]) * 60 + parseInt(a.localTime.split(':')[1])) - a.utcOffset * 60
+              const utcB = (parseInt(b.localTime.split(':')[0]) * 60 + parseInt(b.localTime.split(':')[1])) - b.utcOffset * 60
+              return utcA - utcB
+            }),
+          ]) as [string, Match[]][]
+    return sorted
   }, [filtered])
 
   return (
