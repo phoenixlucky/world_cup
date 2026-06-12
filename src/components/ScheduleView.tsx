@@ -415,7 +415,11 @@ export function ScheduleView() {
       map.set(t.id, {
         attack: (t.goalsFor20 / 20).toFixed(1),
         defense: (5 - t.goalsAgainst20 / 20).toFixed(1),
-        opponent: ((continentStrength[t.continent] ?? 1.0) * 100).toFixed(0),
+        opponent: (() => {
+          const val = continentStrength[t.continent] ?? 1.0
+          const pct = Math.round((val - 1) * 100)
+          return pct > 0 ? `+${pct}%` : pct < 0 ? `${pct}%` : '0%'
+        })(),
       })
     }
     return map
