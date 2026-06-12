@@ -405,6 +405,22 @@ export function ScheduleView() {
 
   const teamMap = useMemo(() => new Map(teams.map(t => [t.id, t])), [])
 
+  // Detailed team stats for schedule display
+  const teamStatsMap = useMemo(() => {
+    const map = new Map<string, { attack: string; defense: string; opponent: string }>()
+    const continentStrength: Record<string, number> = {
+      UEFA: 1.15, CONMEBOL: 1.10, CONCACAF: 1.00, CAF: 0.95, AFC: 0.90, OFC: 0.85,
+    }
+    for (const t of teams) {
+      map.set(t.id, {
+        attack: (t.goalsFor20 / 20).toFixed(1),
+        defense: (5 - t.goalsAgainst20 / 20).toFixed(1),
+        opponent: ((continentStrength[t.continent] ?? 1.0) * 100).toFixed(0),
+      })
+    }
+    return map
+  }, [])
+
   const filtered = useMemo(() => {
     return allMatches.filter(m => {
       if (filterRound !== 'all' && m.round !== filterRound) return false
@@ -590,15 +606,35 @@ export function ScheduleView() {
 
                     {/* Teams + score */}
                     <div className="flex items-center gap-3 min-w-0 flex-1 justify-center">
-                      <FlagImg code={home?.flagCode || ''} size={32} />
-                      <span className="truncate text-white text-base font-medium">{home?.nameCN || '待定'}</span>
+                      <div className="flex flex-col items-center">
+                        <FlagImg code={home?.flagCode || ''} size={28} />
+                        <span className="truncate text-white text-sm font-medium mt-1">{home?.nameCN || '待定'}</span>
+                        {home && (() => {
+                          const st = teamStatsMap.get(home.id)
+                          return st ? (
+                            <div className="text-[9px] text-slate-500 leading-tight mt-0.5 whitespace-nowrap">
+                              攻{st.attack} 防{st.defense} 对{st.opponent}
+                            </div>
+                          ) : null
+                        })()}
+                      </div>
 
                       <span className="mx-3 font-mono min-w-[6rem] text-center">
                         {scoreContent || <span className="text-slate-600">vs</span>}
                       </span>
 
-                      <span className="text-base truncate text-white font-medium">{away?.nameCN || '待定'}</span>
-                      <FlagImg code={away?.flagCode || ''} size={32} />
+                      <div className="flex flex-col items-center">
+                        <FlagImg code={away?.flagCode || ''} size={28} />
+                        <span className="truncate text-white text-sm font-medium mt-1">{away?.nameCN || '待定'}</span>
+                        {away && (() => {
+                          const st = teamStatsMap.get(away.id)
+                          return st ? (
+                            <div className="text-[9px] text-slate-500 leading-tight mt-0.5 whitespace-nowrap">
+                              攻{st.attack} 防{st.defense} 对{st.opponent}
+                            </div>
+                          ) : null
+                        })()}
+                      </div>
                     </div>
 
                     {/* Venue + analysis */}
