@@ -618,7 +618,7 @@ export function ScheduleView() {
                             <div className="flex flex-col items-end text-[11px] leading-tight mr-1">
                               <span className="text-green-400 font-bold">攻 {st.attack}</span>
                               <span className="text-blue-400 font-bold">防 {st.defense}</span>
-                              <span className="text-purple-400 font-bold">对 {st.opponent}</span>
+                              <span className="text-purple-400 font-bold">buff {st.opponent}</span>
                             </div>
                           ) : null
                         })()}
@@ -644,7 +644,7 @@ export function ScheduleView() {
                             <div className="flex flex-col items-start text-[11px] leading-tight ml-1">
                               <span className="text-green-400 font-bold">攻 {st.attack}</span>
                               <span className="text-blue-400 font-bold">防 {st.defense}</span>
-                              <span className="text-purple-400 font-bold">对 {st.opponent}</span>
+                              <span className="text-purple-400 font-bold">buff {st.opponent}</span>
                             </div>
                           ) : null
                         })()}
