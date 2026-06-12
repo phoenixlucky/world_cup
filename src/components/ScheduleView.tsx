@@ -605,32 +605,42 @@ export function ScheduleView() {
                     </div>
 
                     {/* Teams + score */}
-                    <div className="flex items-center gap-3 min-w-0 flex-1 justify-center">
-                      <div className="flex flex-col items-center">
-                        <FlagImg code={home?.flagCode || ''} size={28} />
-                        <span className="truncate text-white text-sm font-medium mt-1">{home?.nameCN || '待定'}</span>
+                    <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1 justify-center">
+                      {/* Home team: stats on the left, flag+name on the right */}
+                      <div className="flex items-center gap-1">
                         {home && (() => {
                           const st = teamStatsMap.get(home.id)
                           return st ? (
-                            <div className="text-[9px] text-slate-500 leading-tight mt-0.5 whitespace-nowrap">
-                              攻{st.attack} 防{st.defense} 对{st.opponent}
+                            <div className="flex flex-col items-end text-[11px] leading-tight mr-1">
+                              <span className="text-green-400 font-bold">攻 {st.attack}</span>
+                              <span className="text-blue-400 font-bold">防 {st.defense}</span>
+                              <span className="text-purple-400 font-bold">对 {st.opponent}</span>
                             </div>
                           ) : null
                         })()}
+                        <div className="flex flex-col items-center">
+                          <FlagImg code={home?.flagCode || ''} size={28} />
+                          <span className="truncate text-white text-xs font-medium mt-0.5">{home?.nameCN || '待定'}</span>
+                        </div>
                       </div>
 
-                      <span className="mx-3 font-mono min-w-[6rem] text-center">
+                      <span className="mx-1 sm:mx-3 font-mono min-w-[5rem] sm:min-w-[6rem] text-center">
                         {scoreContent || <span className="text-slate-600">vs</span>}
                       </span>
 
-                      <div className="flex flex-col items-center">
-                        <FlagImg code={away?.flagCode || ''} size={28} />
-                        <span className="truncate text-white text-sm font-medium mt-1">{away?.nameCN || '待定'}</span>
+                      {/* Away team: flag+name on the left, stats on the right */}
+                      <div className="flex items-center gap-1">
+                        <div className="flex flex-col items-center">
+                          <FlagImg code={away?.flagCode || ''} size={28} />
+                          <span className="truncate text-white text-xs font-medium mt-0.5">{away?.nameCN || '待定'}</span>
+                        </div>
                         {away && (() => {
                           const st = teamStatsMap.get(away.id)
                           return st ? (
-                            <div className="text-[9px] text-slate-500 leading-tight mt-0.5 whitespace-nowrap">
-                              攻{st.attack} 防{st.defense} 对{st.opponent}
+                            <div className="flex flex-col items-start text-[11px] leading-tight ml-1">
+                              <span className="text-green-400 font-bold">攻 {st.attack}</span>
+                              <span className="text-blue-400 font-bold">防 {st.defense}</span>
+                              <span className="text-purple-400 font-bold">对 {st.opponent}</span>
                             </div>
                           ) : null
                         })()}
