@@ -373,8 +373,13 @@ export function ScheduleView() {
   const [filterVenue, setFilterVenue] = useState<string>('all')
 
   const [liveScores, setLiveScores] = useState<Record<string, string>>(() => {
-    try { return JSON.parse(localStorage.getItem('wc26-scores') || '{}') }
-    catch { return {} }
+    try {
+      return {
+        'g-A-0': '2-0',   // Mexico 2-0 South Africa
+        'g-A-1': '2-1',   // South Korea 2-1 Czech Republic
+        ...JSON.parse(localStorage.getItem('wc26-scores') || '{}'),
+      }
+    } catch { return { 'g-A-0': '2-0', 'g-A-1': '2-1' } }
   })
 
   const setScore = useCallback((matchId: string, score: string) => {
@@ -467,9 +472,37 @@ export function ScheduleView() {
                 const storedScore = liveScores[m.id]
 
                 let scoreContent: ReactNode = null
+                let predicted: string | null = null
+
+                // Compute and store prediction for future matches
+                if (!past && home && away) {
+                  const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
+                  predicted = `${ph}-${pa}`
+                  // Store prediction in localStorage
+                  try {
+                    const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
+                    if (!preds[m.id]) {
+                      preds[m.id] = predicted
+                      localStorage.setItem('wc26-predicted', JSON.stringify(preds))
+                    } else {
+                      predicted = preds[m.id]
+                    }
+                  } catch {}
+                } else {
+                  // Look up previously stored prediction
+                  try {
+                    const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
+                    if (preds[m.id]) predicted = preds[m.id]
+                  } catch {}
+                }
 
                 if (past && storedScore) {
-                  scoreContent = <span className="text-green-400 font-bold text-lg">{storedScore}</span>
+                  scoreContent = (
+                    <div className="flex flex-col items-center">
+                      <span className="text-green-400 font-bold text-lg">{storedScore}</span>
+                      {predicted && <span className="text-slate-500 text-[10px]">预测 {predicted}</span>}
+                    </div>
+                  )
                 } else if (past && home && away) {
                   scoreContent = (
                     <span className="inline-flex items-center gap-1">
@@ -490,7 +523,8 @@ export function ScheduleView() {
                   )
                 } else if (!past && home && away) {
                   const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
-                  scoreContent = <span className="text-orange-400 font-bold text-lg">预测 {ph}-{pa}</span>
+                  const predStr = predicted || `${ph}-${pa}`
+                  scoreContent = <span className="text-orange-400 font-bold text-lg">预测 {predStr}</span>
                 }
 
                 if (m.round === 'ceremony') {
