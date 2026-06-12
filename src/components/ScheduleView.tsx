@@ -507,7 +507,7 @@ export function ScheduleView() {
                   scoreContent = (
                     <div className="flex flex-col items-center">
                       <span className="text-green-400 font-bold text-lg">{storedScore}</span>
-                      {predicted && <span className="text-slate-500 text-[10px]">预测 {predicted}</span>}
+                      {predicted && <span className="text-orange-400 text-xs font-medium">预测 {predicted}</span>}
                     </div>
                   )
                 } else if (past && home && away) {
