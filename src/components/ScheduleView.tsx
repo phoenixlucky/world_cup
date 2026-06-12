@@ -489,10 +489,17 @@ export function ScheduleView() {
                     }
                   } catch {}
                 } else {
-                  // Look up previously stored prediction
+                  // Look up previously stored prediction, or compute it now
                   try {
                     const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
-                    if (preds[m.id]) predicted = preds[m.id]
+                    if (preds[m.id]) {
+                      predicted = preds[m.id]
+                    } else if (home && away) {
+                      const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
+                      predicted = `${ph}-${pa}`
+                      preds[m.id] = predicted
+                      localStorage.setItem('wc26-predicted', JSON.stringify(preds))
+                    }
                   } catch {}
                 }
 
