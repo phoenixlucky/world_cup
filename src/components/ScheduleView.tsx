@@ -358,6 +358,12 @@ function buildAllMatches(): Match[] {
 
 const allMatches = buildAllMatches()
 
+// ── Analysis notes for completed matches ──────────────────
+const matchNotes: Record<string, string> = {
+  'g-A-0': '南非防守弱于预期',
+  'g-A-1': '韩国进攻被低估',
+}
+
 /** Predict score from team strength ratio */
 function predictScore(homeId: string, awayId: string, tm: Map<string, number>): [number, number] {
   const hs = tm.get(homeId) || 50
@@ -508,6 +514,7 @@ export function ScheduleView() {
                     <div className="flex flex-col items-center">
                       <span className="text-green-400 font-bold text-lg">{storedScore}</span>
                       {predicted && <span className="text-orange-400 text-xs font-medium">预测 {predicted}</span>}
+                      {matchNotes[m.id] && <span className="text-slate-500 text-[9px] mt-0.5">{matchNotes[m.id]}</span>}
                     </div>
                   )
                 } else if (past && home && away) {
