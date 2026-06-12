@@ -9,23 +9,25 @@ import type { Team } from '../data/teams'
 
 // ── Dimension weights (defaults, user can override) ──────
 export interface Weights {
-  rank: number      // 名次加权
-  marketVal: number  // 身价加权
-  goals: number      // 进球加权
-  wins: number       // 胜场加权
-  form: number       // 状态加权
-  luck: number       // 运气加权
-  hostBonus: number  // 州加成
+  rank: number        // 名次加权
+  marketVal: number   // 身价加权
+  goals: number       // 进球加权
+  wins: number        // 胜场加权
+  form: number        // 状态加权
+  luck: number        // 运气加权
+  hostBonus: number   // 州加成
+  attackDefense: number // 攻防专项能力
 }
 
 export const DEFAULT_WEIGHTS: Weights = {
-  rank: 20,
-  marketVal: 15,
-  goals: 15,
-  wins: 25,
-  form: 15,
+  rank: 16,
+  marketVal: 12,
+  goals: 10,
+  wins: 18,
+  form: 12,
   luck: 5,
   hostBonus: 5,
+  attackDefense: 22,
 }
 
 // ── Continent host bonus multipliers ─────────────────────
@@ -62,11 +64,12 @@ export interface TeamScores {
     form: number
     luck: number
     hostBonus: number
+    attackDefense: number
   }
   total: number  // weighted sum
 }
 
-type NumericKey = 'rank' | 'marketVal' | 'goals' | 'wins'
+type NumericKey = 'rank' | 'marketVal' | 'goals' | 'wins' | 'attackDefense'
 
 /** Min-max normalise an array of numbers to [0, 100] (higher = better).
  *  For rank, lower is better so we invert. */
@@ -137,17 +140,19 @@ function computeScoresRaw(teams: Team[], weights: Weights): TeamScores[] {
   const mvRaw = teams.map(t => t.marketVal)
   const goalRatios = teams.map(t => t.goalsFor20 / (t.goalsFor20 + t.goalsAgainst20 || 1) * 100)
   const winRates = teams.map(t => (t.wins20 / Math.max(t.wins20 + t.losses20 + t.draws20, 1)) * 100)
+  const gdRaw = teams.map(t => (t.goalsFor20 - t.goalsAgainst20) / 20 * 10 + 50) // goal diff per game scaled
 
   // --- 2. Normalise ---
   const rankNorm = normalise(rankRaw, 'rank')
   const mvNorm = normalise(mvRaw, 'marketVal')
   const goalNorm = normalise(goalRatios, 'goals')
   const winNorm = normalise(winRates, 'wins')
+  const adNorm = normalise(gdRaw, 'attackDefense')
 
   // --- 3. Build scores ---
   const totalWeight =
     weights.rank + weights.marketVal + weights.goals + weights.wins +
-    weights.form + weights.luck + weights.hostBonus || 1
+    weights.form + weights.luck + weights.hostBonus + weights.attackDefense || 1
 
   return teams.map((t, i) => {
     const fScore = formScore(t.recentForm)
@@ -162,6 +167,7 @@ function computeScoresRaw(teams: Team[], weights: Weights): TeamScores[] {
       form: fScore,
       luck: lScore,
       hostBonus: hBonus,
+      attackDefense: adNorm[i],
     }
 
     const total = (
@@ -171,7 +177,8 @@ function computeScoresRaw(teams: Team[], weights: Weights): TeamScores[] {
       dim.wins * weights.wins +
       dim.form * weights.form +
       dim.luck * weights.luck +
-      dim.hostBonus * weights.hostBonus
+      dim.hostBonus * weights.hostBonus +
+      dim.attackDefense * weights.attackDefense
     ) / totalWeight
 
     return {

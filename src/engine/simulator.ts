@@ -142,7 +142,7 @@ function scoreMap(scores: TeamScores[]): Map<string, TeamScores> {
         group: t.group,
         continent: t.continent,
         raw: { rank: t.fifaRank, marketVal: t.marketVal, goals: t.goalsFor20, wins: t.wins20, form: 50 },
-        dim: { rank: 50, marketVal: 50, goals: 50, wins: 50, form: 50, luck: 50, hostBonus: 0 },
+        dim: { rank: 50, marketVal: 50, goals: 50, wins: 50, form: 50, luck: 50, hostBonus: 0, attackDefense: 50 },
         total: 50,
       })
     }
