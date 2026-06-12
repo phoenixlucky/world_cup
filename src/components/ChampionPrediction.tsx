@@ -84,7 +84,7 @@ export function ChampionPrediction({ result, scores, running, progress, onStart 
   return (
     <div className="space-y-6">
       {/* Control bar */}
-      <div className="flex items-center justify-between bg-slate-800/60 border border-slate-700 rounded-xl p-4">
+      <div className="flex flex-wrap items-center gap-3 justify-between bg-slate-800/60 border border-slate-700 rounded-xl p-4">
         <div>
           <span className="text-sm text-slate-400">
             已完成 <span className="text-white font-bold">{result.totalSims.toLocaleString()}</span> 次模拟

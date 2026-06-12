@@ -1,6 +1,7 @@
 /**
- * Navbar — top navigation bar
+ * Navbar — top navigation bar with responsive hamburger drawer on mobile
  */
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { FlagImg } from './FlagImg'
 
@@ -13,34 +14,100 @@ const links = [
 ]
 
 export function Navbar() {
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const linkClass = ({ isActive }: { isActive: boolean }) =>
+    `block px-4 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+      isActive
+        ? 'bg-blue-600 text-white'
+        : 'text-slate-300 hover:text-white hover:bg-slate-700'
+    }`
+
   return (
-    <nav className="bg-slate-900/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-14">
-          <span className="flex items-center gap-1 text-lg font-bold text-white tracking-tight whitespace-nowrap">
-            <FlagImg code="CA" size={16} /><FlagImg code="MX" size={16} /><FlagImg code="US" size={16} />
-            2026 世界杯预测
-          </span>
-          <div className="flex gap-1 overflow-x-auto">
-            {links.map(l => (
-              <NavLink
-                key={l.to}
-                to={l.to}
-                title={l.title}
-                className={({ isActive }) =>
-                  `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                    isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-700'
-                  }`
-                }
-              >
-                {l.label}
-              </NavLink>
-            ))}
+    <>
+      {/* Top bar */}
+      <nav className="bg-slate-900/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14">
+            {/* Logo */}
+            <span className="flex items-center gap-1 text-lg font-bold text-white tracking-tight whitespace-nowrap">
+              <FlagImg code="CA" size={16} /><FlagImg code="MX" size={16} /><FlagImg code="US" size={16} />
+              2026 世界杯预测
+            </span>
+
+            {/* Desktop nav (hidden on mobile) */}
+            <div className="hidden md:flex gap-1">
+              {links.map(l => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  title={l.title}
+                  className={linkClass}
+                >
+                  {l.label}
+                </NavLink>
+              ))}
+            </div>
+
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+              aria-label="打开导航菜单"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* Mobile drawer overlay */}
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 z-[60] md:hidden"
+          onClick={() => setDrawerOpen(false)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+
+          {/* Drawer panel */}
+          <div
+            className="absolute top-0 right-0 h-full w-64 max-w-[80vw] bg-slate-900 border-l border-slate-700 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Drawer header */}
+            <div className="flex items-center justify-between px-4 h-14 border-b border-slate-700">
+              <span className="text-sm font-semibold text-slate-300">导航菜单</span>
+              <button
+                onClick={() => setDrawerOpen(false)}
+                className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                aria-label="关闭导航菜单"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Drawer links */}
+            <div className="p-4 space-y-1">
+              {links.map(l => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  title={l.title}
+                  onClick={() => setDrawerOpen(false)}
+                  className={linkClass}
+                >
+                  {l.label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

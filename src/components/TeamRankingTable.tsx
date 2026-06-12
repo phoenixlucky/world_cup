@@ -80,7 +80,7 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
               <th className="px-3 py-3 font-medium">#</th>
               <th className="px-3 py-3 font-medium">球队</th>
               <th className="px-3 py-3 font-medium">组别</th>
-              <th className="px-3 py-3 font-medium text-right">进攻火力</th>
+              <th className="px-3 py-3 font-medium text-right max-sm:hidden">进攻火力</th>
               <th className="px-3 py-3 font-medium text-right hidden sm:table-cell">防守稳固度</th>
               <th className="px-3 py-3 font-medium text-right">综合评分</th>
               <th className="px-3 py-3 font-medium text-right">FIFA排名</th>
@@ -114,7 +114,7 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
                     {s.group}
                   </span>
                 </td>
-                <td className="px-3 py-2.5 text-right">
+                <td className="px-3 py-2.5 text-right max-sm:hidden">
                   <span className={`font-bold font-mono ${
                     s.raw.goals / 20 >= 1.8 ? 'text-green-400' :
                     s.raw.goals / 20 >= 1.2 ? 'text-blue-400' :
@@ -142,7 +142,7 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
                     {s.total.toFixed(1)}
                   </span>
                   {/* Mini bar */}
-                  <div className="w-16 h-1.5 bg-slate-700 rounded-full mt-1 ml-auto">
+                  <div className="w-12 sm:w-16 h-1.5 bg-slate-700 rounded-full mt-1 ml-auto">
                     <div
                       className="h-full rounded-full bg-blue-500 transition-all"
                       style={{ width: `${s.total}%` }}

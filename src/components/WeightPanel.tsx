@@ -51,10 +51,12 @@ export function WeightPanel({ weights, onChange }: Props) {
               className="w-full h-1.5 rounded-full appearance-none cursor-pointer
                          bg-slate-600 accent-blue-500
                          [&::-webkit-slider-thumb]:appearance-none
-                         [&::-webkit-slider-thumb]:w-4
-                         [&::-webkit-slider-thumb]:h-4
+                         [&::-webkit-slider-thumb]:w-5
+                         [&::-webkit-slider-thumb]:h-5
                          [&::-webkit-slider-thumb]:rounded-full
-                         [&::-webkit-slider-thumb]:shadow-lg"
+                         [&::-webkit-slider-thumb]:shadow-lg
+                         sm:[&::-webkit-slider-thumb]:w-4
+                         sm:[&::-webkit-slider-thumb]:h-4"
               style={{ accentColor: color }}
             />
           </div>
@@ -65,7 +67,7 @@ export function WeightPanel({ weights, onChange }: Props) {
         onClick={() =>
           onChange({ rank: 15, marketVal: 10, goals: 8, attackDefense: 20, opponentStrength: 11, wins: 16, form: 10, luck: 5, hostBonus: 5 })
         }
-        className="mt-4 w-full py-2 px-4 bg-slate-700 hover:bg-slate-600 text-slate-200
+        className="mt-4 w-full py-3 sm:py-2 px-4 bg-slate-700 hover:bg-slate-600 text-slate-200
                    rounded-lg text-sm font-medium transition-colors"
       >
         🔄 恢复默认

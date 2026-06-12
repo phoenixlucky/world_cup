@@ -3,9 +3,10 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "homepage": "https://your-username.github.io/world_cup",
+  "homepage": "https://phoenixlucky.github.io/world_cup",
   "scripts": {
     "dev": "vite",
+    "web": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

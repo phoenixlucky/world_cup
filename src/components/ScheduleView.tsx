@@ -538,16 +538,16 @@ export function ScheduleView() {
                   )
                 } else if (past && home && away) {
                   scoreContent = (
-                    <span className="inline-flex items-center gap-1">
+                    <span className="inline-flex items-center gap-2">
                       <input id={`sc-${m.id}`} type="text" placeholder="?-?" maxLength={3}
-                        className="w-12 bg-slate-700 text-white text-center text-xs rounded px-1 py-0.5 border border-slate-600"
+                        className="w-14 bg-slate-700 text-white text-center text-sm rounded px-1 py-1.5 border border-slate-600"
                         onKeyDown={e => {
                           if (e.key === 'Enter' && /^\d-\d$/.test(e.currentTarget.value.trim())) {
                             setScore(m.id, e.currentTarget.value.trim())
                           }
                         }}
                       />
-                      <button className="text-[10px] text-blue-400 hover:text-blue-300"
+                      <button className="text-sm text-blue-400 hover:text-blue-300 px-2 py-1.5"
                         onClick={() => {
                           const el = document.getElementById(`sc-${m.id}`) as HTMLInputElement
                           if (el && /^\d-\d$/.test(el.value)) setScore(m.id, el.value)
@@ -610,41 +610,41 @@ export function ScheduleView() {
 
                     {/* Teams + score */}
                     <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1 justify-center">
-                      {/* Home team: stats on the left, flag+name on the right */}
-                      <div className="flex items-center gap-1">
+                      {/* Home team: stats below name on mobile / left of flag on desktop */}
+                      <div className="flex flex-col items-center gap-0.5 sm:flex-row sm:gap-1">
+                        <div className="flex flex-col items-center order-1 sm:order-2">
+                          <FlagImg code={home?.flagCode || ''} size={22} className="sm:w-7 sm:h-7" />
+                          <span className="truncate text-white text-xs font-medium mt-0.5">{home?.nameCN || '待定'}</span>
+                        </div>
                         {home && (() => {
                           const st = teamStatsMap.get(home.id)
                           return st ? (
-                            <div className="flex flex-col items-end text-[11px] leading-tight mr-1">
+                            <div className="flex flex-row sm:flex-col items-center sm:items-end gap-x-2 sm:gap-x-0 sm:mr-1 text-[11px] leading-tight order-2 sm:order-1">
                               <span className="text-green-400 font-bold">攻 {st.attack}</span>
                               <span className="text-blue-400 font-bold">防 {st.defense}</span>
-                              <span className="text-purple-400 font-bold">buff {st.opponent}</span>
+                              <span className="text-purple-400 font-bold">状 {st.opponent}</span>
                             </div>
                           ) : null
                         })()}
-                        <div className="flex flex-col items-center">
-                          <FlagImg code={home?.flagCode || ''} size={28} />
-                          <span className="truncate text-white text-xs font-medium mt-0.5">{home?.nameCN || '待定'}</span>
-                        </div>
                       </div>
 
                       <span className="mx-1 sm:mx-3 font-mono min-w-[5rem] sm:min-w-[6rem] text-center">
                         {scoreContent || <span className="text-slate-600">vs</span>}
                       </span>
 
-                      {/* Away team: flag+name on the left, stats on the right */}
-                      <div className="flex items-center gap-1">
-                        <div className="flex flex-col items-center">
-                          <FlagImg code={away?.flagCode || ''} size={28} />
+                      {/* Away team: flag+name on the left, stats below on mobile / right of flag on desktop */}
+                      <div className="flex flex-col items-center gap-0.5 sm:flex-row sm:gap-1">
+                        <div className="flex flex-col items-center order-1">
+                          <FlagImg code={away?.flagCode || ''} size={22} className="sm:w-7 sm:h-7" />
                           <span className="truncate text-white text-xs font-medium mt-0.5">{away?.nameCN || '待定'}</span>
                         </div>
                         {away && (() => {
                           const st = teamStatsMap.get(away.id)
                           return st ? (
-                            <div className="flex flex-col items-start text-[11px] leading-tight ml-1">
+                            <div className="flex flex-row sm:flex-col items-center sm:items-start gap-x-2 sm:gap-x-0 sm:ml-1 text-[11px] leading-tight order-2">
                               <span className="text-green-400 font-bold">攻 {st.attack}</span>
                               <span className="text-blue-400 font-bold">防 {st.defense}</span>
-                              <span className="text-purple-400 font-bold">buff {st.opponent}</span>
+                              <span className="text-purple-400 font-bold">状 {st.opponent}</span>
                             </div>
                           ) : null
                         })()}
