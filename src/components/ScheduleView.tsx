@@ -360,8 +360,8 @@ const allMatches = buildAllMatches()
 
 // ── Analysis notes for completed matches ──────────────────
 const matchNotes: Record<string, string> = {
-  'g-A-0': '南非防守弱于预期',
-  'g-A-1': '韩国进攻被低估',
+  'g-A-0': '开幕战效应，南非进攻乏力',
+  'g-A-1': '韩国状态佳，捷克防守不稳',
 }
 
 /** Predict score from team strength ratio */
@@ -514,7 +514,6 @@ export function ScheduleView() {
                     <div className="flex flex-col items-center">
                       <span className="text-green-400 font-bold text-lg">{storedScore}</span>
                       {predicted && <span className="text-orange-400 text-xs font-medium">预测 {predicted}</span>}
-                      {matchNotes[m.id] && <span className="text-slate-500 text-[9px] mt-0.5">{matchNotes[m.id]}</span>}
                     </div>
                   )
                 } else if (past && home && away) {
@@ -602,9 +601,12 @@ export function ScheduleView() {
                       <FlagImg code={away?.flagCode || ''} size={32} />
                     </div>
 
-                    {/* Venue */}
+                    {/* Venue + analysis */}
                     <div className="text-slate-400 text-sm flex-shrink-0 text-right leading-snug hidden sm:block">
                       {m.venue}<br /><span className="text-slate-500">{m.city}</span>
+                      {matchNotes[m.id] && (
+                        <div className="text-green-400 text-xs font-medium mt-1 max-w-[10rem] leading-tight">{matchNotes[m.id]}</div>
+                      )}
                     </div>
 
                     {m.group && (() => {
