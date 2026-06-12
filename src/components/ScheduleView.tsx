@@ -417,7 +417,7 @@ export function ScheduleView() {
         defense: (5 - t.goalsAgainst20 / 20).toFixed(1),
         opponent: (() => {
           const val = continentStrength[t.continent] ?? 1.0
-          const pct = Math.round((val - 1) * 100)
+          const pct = Math.round((1 - val) * 100)  // reversed: weak teams get +buff, strong teams get -buff
           return pct > 0 ? `+${pct}%` : pct < 0 ? `${pct}%` : '0%'
         })(),
       })
