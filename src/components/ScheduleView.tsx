@@ -359,9 +359,12 @@ function buildAllMatches(): Match[] {
 const allMatches = buildAllMatches()
 
 // ── Analysis notes for completed matches ──────────────────
+// 格式：{ matchId: '实际比分 vs 预测比分 | 原因分析' }
 const matchNotes: Record<string, string> = {
-  'g-A-0': '开幕战效应，南非进攻乏力',
-  'g-A-1': '韩国状态佳，捷克防守不稳',
+  'g-A-0': '2-0 vs 预测2-1 | 南非两人染红九人应战，进攻完全瘫痪；墨西哥控场但进球效率偏低',
+  'g-A-1': '2-1 vs 预测1-1 | 韩国下半场逆转，替补吴贤揆80分钟绝杀；捷克领先后过于保守丢好局',
+  'g-B-0': '1-1 vs 预测2-1 | 加拿大历史首分！波黑先开纪录，拉林78分钟扳平；主场气势加分但效率不足',
+  'g-D-0': '4-1 vs 预测2-1 | 巴洛贡梅开二度创美国历史(96年来首次单场2+球)，巴拉圭防线全面崩溃',
 }
 
 /** Predict score from team strength ratio */
@@ -381,11 +384,16 @@ export function ScheduleView() {
   const [liveScores, setLiveScores] = useState<Record<string, string>>(() => {
     try {
       return {
-        'g-A-0': '2-0',   // Mexico 2-0 South Africa
-        'g-A-1': '2-1',   // South Korea 2-1 Czech Republic
+        'g-A-0': '2-0',   // Mexico 2-0 South Africa  ✅
+        'g-A-1': '2-1',   // South Korea 2-1 Czech Republic  ✅
+        'g-B-0': '1-1',   // Canada 1-1 Bosnia (Canada历史首分)
+        'g-D-0': '4-1',   // USA 4-1 Paraguay (Balogun梅开二度)
         ...JSON.parse(localStorage.getItem('wc26-scores') || '{}'),
       }
-    } catch { return { 'g-A-0': '2-0', 'g-A-1': '2-1' } }
+    } catch { return {
+      'g-A-0': '2-0', 'g-A-1': '2-1',
+      'g-B-0': '1-1', 'g-D-0': '4-1',
+    } }
   })
 
   const setScore = useCallback((matchId: string, score: string) => {
@@ -530,10 +538,31 @@ export function ScheduleView() {
                 }
 
                 if (past && storedScore) {
+                  // Compare predicted vs actual
+                  let comparison: { icon: string; label: string; color: string } | null = null
+                  if (predicted) {
+                    const [aH, aA] = storedScore.split('-').map(Number)
+                    const [pH, pA] = predicted.split('-').map(Number)
+                    if (aH === pH && aA === pA) {
+                      comparison = { icon: '✅', label: '预测准确', color: 'text-green-400' }
+                    } else {
+                      const actualWinner = aH > aA ? 'home' : aA > aH ? 'away' : 'draw'
+                      const predWinner = pH > pA ? 'home' : pA > pH ? 'away' : 'draw'
+                      comparison = actualWinner === predWinner
+                        ? { icon: '⚠️', label: '方向对·比分差', color: 'text-yellow-400' }
+                        : { icon: '❌', label: '预测错误', color: 'text-red-400' }
+                    }
+                  }
                   scoreContent = (
                     <div className="flex flex-col items-center">
                       <span className="text-green-400 font-bold text-lg">{storedScore}</span>
-                      {predicted && <span className="text-orange-400 text-xs font-medium">预测 {predicted}</span>}
+                      {predicted && <span className="flex items-center gap-1 text-orange-400 text-xs font-medium">
+                        {comparison && <span className={comparison.color}>{comparison.icon}</span>}
+                        预测 {predicted}
+                      </span>}
+                      {comparison && comparison.label !== '预测准确' && (
+                        <span className={`${comparison.color} text-[10px] font-medium`}>{comparison.label}</span>
+                      )}
                     </div>
                   )
                 } else if (past && home && away) {
@@ -652,11 +681,20 @@ export function ScheduleView() {
                     </div>
 
                     {/* Venue + analysis */}
-                    <div className="text-slate-400 text-sm flex-shrink-0 text-right leading-snug hidden sm:block">
+                    <div className="text-slate-400 text-sm flex-shrink-0 text-right leading-snug hidden sm:block max-w-[12rem]">
                       {m.venue}<br /><span className="text-slate-500">{m.city}</span>
-                      {matchNotes[m.id] && (
-                        <div className="text-green-400 text-xs font-medium mt-1 max-w-[10rem] leading-tight">{matchNotes[m.id]}</div>
-                      )}
+                      {matchNotes[m.id] && (() => {
+                        // Split "比分 vs 预测比分 | 分析原因"
+                        const sep = matchNotes[m.id].indexOf(' | ')
+                        const scoreComp = sep > 0 ? matchNotes[m.id].slice(0, sep) : ''
+                        const reason = sep > 0 ? matchNotes[m.id].slice(sep + 3) : matchNotes[m.id]
+                        return (
+                          <div className="mt-1 leading-tight">
+                            {scoreComp && <div className="text-yellow-400 text-[11px] font-semibold">{scoreComp}</div>}
+                            <div className="text-green-400/90 text-[11px]">{reason}</div>
+                          </div>
+                        )
+                      })()}
                     </div>
 
                     {m.group && (() => {
