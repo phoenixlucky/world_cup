@@ -365,6 +365,9 @@ const matchNotes: Record<string, string> = {
   'g-A-1': '2-1 vs 预测1-1 | 韩国下半场逆转，替补吴贤揆80分钟绝杀；捷克领先后过于保守丢好局',
   'g-B-0': '1-1 vs 预测2-1 | 加拿大历史首分！波黑先开纪录，拉林78分钟扳平；主场气势加分但效率不足',
   'g-D-0': '4-1 vs 预测2-1 | 巴洛贡梅开二度创美国历史(96年来首次单场2+球)，巴拉圭防线全面崩溃',
+  'g-B-1': '1-1 vs 预测1-2 | 恩博洛17分钟点球首开纪录；瑞士89分钟乌龙送礼（穆海姆），卡塔尔补时绝平拿历史首分',
+  'g-C-0': '1-1 vs 预测3-1 | 摩洛哥赛巴里21分钟先拔头筹；维尼修斯32分钟凌空斩扳平，巴西狂攻未果',
+  'g-C-1': '0-1 vs 预测0-3 | 海地密集防守顽强抵抗85分钟，麦金角球头槌绝杀；全场苏格兰控球72%却破门乏术',
 }
 
 /** Predict score from team strength ratio */
@@ -388,11 +391,16 @@ export function ScheduleView() {
         'g-A-1': '2-1',   // South Korea 2-1 Czech Republic  ✅
         'g-B-0': '1-1',   // Canada 1-1 Bosnia (Canada历史首分)
         'g-D-0': '4-1',   // USA 4-1 Paraguay (Balogun梅开二度)
+        'g-B-1': '1-1',   // Qatar 1-1 Switzerland
+        'g-C-0': '1-1',   // Brazil 1-1 Morocco
+        'g-C-1': '0-1',   // Haiti 0-1 Scotland
         ...JSON.parse(localStorage.getItem('wc26-scores') || '{}'),
       }
     } catch { return {
       'g-A-0': '2-0', 'g-A-1': '2-1',
       'g-B-0': '1-1', 'g-D-0': '4-1',
+      'g-B-1': '1-1', 'g-C-0': '1-1',
+      'g-C-1': '0-1',
     } }
   })
 
@@ -537,12 +545,14 @@ export function ScheduleView() {
                   } catch {}
                 }
 
-                if (past && storedScore) {
+                if (past && storedScore && home && away) {
                   // Compare predicted vs actual
+                  const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
+                  const predStr = predicted || `${ph}-${pa}`
                   let comparison: { icon: string; label: string; color: string } | null = null
-                  if (predicted) {
+                  if (predStr) {
                     const [aH, aA] = storedScore.split('-').map(Number)
-                    const [pH, pA] = predicted.split('-').map(Number)
+                    const [pH, pA] = predStr.split('-').map(Number)
                     if (aH === pH && aA === pA) {
                       comparison = { icon: '✅', label: '预测准确', color: 'text-green-400' }
                     } else {
@@ -556,9 +566,9 @@ export function ScheduleView() {
                   scoreContent = (
                     <div className="flex flex-col items-center">
                       <span className="text-green-400 font-bold text-lg">{storedScore}</span>
-                      {predicted && <span className="flex items-center gap-1 text-orange-400 text-xs font-medium">
+                      {predStr && <span className="flex items-center gap-1 text-orange-400 text-xs font-medium">
                         {comparison && <span className={comparison.color}>{comparison.icon}</span>}
-                        预测 {predicted}
+                        预测 {predStr}
                       </span>}
                       {comparison && comparison.label !== '预测准确' && (
                         <span className={`${comparison.color} text-[10px] font-medium`}>{comparison.label}</span>
@@ -566,22 +576,27 @@ export function ScheduleView() {
                     </div>
                   )
                 } else if (past && home && away) {
+                  const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
+                  const predStr = predicted || `${ph}-${pa}`
                   scoreContent = (
-                    <span className="inline-flex items-center gap-2">
-                      <input id={`sc-${m.id}`} type="text" placeholder="?-?" maxLength={3}
-                        className="w-14 bg-slate-700 text-white text-center text-sm rounded px-1 py-1.5 border border-slate-600"
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' && /^\d-\d$/.test(e.currentTarget.value.trim())) {
-                            setScore(m.id, e.currentTarget.value.trim())
-                          }
-                        }}
-                      />
-                      <button className="text-sm text-blue-400 hover:text-blue-300 px-2 py-1.5"
-                        onClick={() => {
-                          const el = document.getElementById(`sc-${m.id}`) as HTMLInputElement
-                          if (el && /^\d-\d$/.test(el.value)) setScore(m.id, el.value)
-                        }}>确认</button>
-                    </span>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="inline-flex items-center gap-2">
+                        <input id={`sc-${m.id}`} type="text" placeholder="?-?" maxLength={3}
+                          className="w-14 bg-slate-700 text-white text-center text-sm rounded px-1 py-1.5 border border-slate-600"
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && /^\d-\d$/.test(e.currentTarget.value.trim())) {
+                              setScore(m.id, e.currentTarget.value.trim())
+                            }
+                          }}
+                        />
+                        <button className="text-sm text-blue-400 hover:text-blue-300 px-2 py-1.5"
+                          onClick={() => {
+                            const el = document.getElementById(`sc-${m.id}`) as HTMLInputElement
+                            if (el && /^\d-\d$/.test(el.value)) setScore(m.id, el.value)
+                          }}>确认</button>
+                      </span>
+                      <span className="text-orange-400 text-xs">预测 {predStr}</span>
+                    </div>
                   )
                 } else if (!past && home && away) {
                   const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
@@ -628,11 +643,14 @@ export function ScheduleView() {
                 }
 
                 return (
-                  <div key={m.id} className="px-4 py-4 flex items-center gap-3">
-                    {/* Time column: Beijing big, local small */}
-                    <div className="flex-shrink-0 w-24 text-center">
-                      <div className="text-yellow-400 font-mono text-base font-bold">{bjTime.date}<br/>{bjTime.time}</div>
-                      <div className="text-slate-500 font-mono text-xs">
+                  <div key={m.id} className="px-3 sm:px-4 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                    {/* Time column: mobile inline, desktop stacked */}
+                    <div className="flex-shrink-0 w-full sm:w-24 text-center">
+                      <div className="text-yellow-400 font-mono text-sm sm:text-base font-bold">
+                        <span className="sm:hidden">{bjTime.date} {bjTime.time}</span>
+                        <span className="hidden sm:inline">{bjTime.date}<br/>{bjTime.time}</span>
+                      </div>
+                      <div className="text-slate-500 font-mono text-xs hidden sm:block">
                         {m.localTime}<span className="text-slate-600"> UTC{m.utcOffset >= 0 ? '+' : ''}{m.utcOffset}</span>
                       </div>
                     </div>
@@ -657,7 +675,7 @@ export function ScheduleView() {
                         })()}
                       </div>
 
-                      <span className="mx-1 sm:mx-3 font-mono min-w-[5rem] sm:min-w-[6rem] text-center">
+                      <span className="mx-0 sm:mx-3 font-mono min-w-[4.5rem] sm:min-w-[6rem] text-center">
                         {scoreContent || <span className="text-slate-600">vs</span>}
                       </span>
 
