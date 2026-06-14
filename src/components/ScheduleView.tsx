@@ -12,6 +12,7 @@
 import { useState, useMemo, useCallback, type ReactNode } from 'react'
 import { teams, groupNames } from '../data/teams'
 import { computeScores, DEFAULT_WEIGHTS } from '../engine/scorer'
+import { predictMostLikelyScore } from '../engine/poisson'
 import { FlagImg } from './FlagImg'
 
 // ── Types ──────────────────────────────────────────────────
@@ -365,8 +366,8 @@ const matchNotes: Record<string, string> = {
   'g-A-1': '2-1 vs 预测1-1 | 韩国下半场逆转，替补吴贤揆80分钟绝杀；捷克领先后过于保守丢好局',
   'g-B-0': '1-1 vs 预测2-1 | 加拿大历史首分！波黑先开纪录，拉林78分钟扳平；主场气势加分但效率不足',
   'g-D-0': '4-1 vs 预测2-1 | 巴洛贡梅开二度创美国历史(96年来首次单场2+球)，巴拉圭防线全面崩溃',
-  'g-B-1': '1-1 vs 预测1-2 | 恩博洛17分钟点球首开纪录；瑞士89分钟乌龙送礼（穆海姆），卡塔尔补时绝平拿历史首分',
-  'g-C-0': '1-1 vs 预测3-1 | 摩洛哥赛巴里21分钟先拔头筹；维尼修斯32分钟凌空斩扳平，巴西狂攻未果',
+  'g-B-1': '1-1 vs 预测1-3 | 恩博洛17分钟点球首开纪录；瑞士89分钟乌龙送礼（穆海姆），卡塔尔补时绝平拿历史首分',
+  'g-C-0': '1-1 vs 预测2-1 | 摩洛哥赛巴里21分钟先拔头筹；维尼修斯32分钟凌空斩扳平，巴西狂攻未果',
   'g-C-1': '0-1 vs 预测0-3 | 海地密集防守顽强抵抗85分钟，麦金角球头槌绝杀；全场苏格兰控球72%却破门乏术',
   'g-D-1': '2-0 vs 预测1-2 | 伊兰昆达27分钟凌空抽射首秀破门，梅特卡夫75分钟单刀锁定胜局；土耳其控球72%狂射30脚无一命中',
 }
@@ -493,8 +494,20 @@ function SyncButton({ setLiveScores }: { setLiveScores: React.Dispatch<React.Set
 function predictScore(homeId: string, awayId: string, tm: Map<string, number>): [number, number] {
   const hs = tm.get(homeId) || 50
   const as = tm.get(awayId) || 50
-  const ratio = hs / Math.max(as, 1)
-  return [Math.max(0, Math.min(5, Math.round(1.2 * ratio))), Math.max(0, Math.min(5, Math.round(1.2 / ratio)))]
+  return predictMostLikelyScore(hs, as)
+}
+
+/** Hardcoded old-model predictions for the 8 default-score matches.
+ *  Written in stone so algorithm updates don't affect completed matches. */
+const DEFAULT_PREDICTIONS: Record<string, string> = {
+  'g-A-0': '2-1',   // Mexico 2-1 South Africa
+  'g-A-1': '1-1',   // South Korea 1-1 Czech Republic
+  'g-B-0': '2-1',   // Canada 2-1 Bosnia
+  'g-D-0': '2-1',   // USA 2-1 Paraguay
+  'g-B-1': '1-3',   // Qatar 1-3 Switzerland
+  'g-C-0': '2-1',   // Brazil 2-1 Morocco
+  'g-C-1': '0-3',   // Haiti 0-3 Scotland
+  'g-D-1': '1-2',   // Australia 1-2 Turkey
 }
 
 // ── Component ──────────────────────────────────────────────
@@ -668,9 +681,13 @@ export function ScheduleView() {
                 }
 
                 if (past && storedScore && home && away) {
-                  // Compare predicted vs actual
-                  const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
-                  const predStr = predicted || `${ph}-${pa}`
+                  // 已完结比赛 — 读取存档预测，不重新计算
+                  let cached = ''
+                  try {
+                    const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
+                    cached = preds[m.id] || ''
+                  } catch {}
+                  const predStr = DEFAULT_PREDICTIONS[m.id] || cached || ''
                   let comparison: { icon: string; label: string; color: string } | null = null
                   if (predStr) {
                     const [aH, aA] = storedScore.split('-').map(Number)
@@ -699,7 +716,7 @@ export function ScheduleView() {
                   )
                 } else if (past && home && away) {
                   const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
-                  const predStr = predicted || `${ph}-${pa}`
+                  const predStr = `${ph}-${pa}`
                   scoreContent = (
                     <div className="flex flex-col items-center gap-1">
                       <span className="inline-flex items-center gap-2">

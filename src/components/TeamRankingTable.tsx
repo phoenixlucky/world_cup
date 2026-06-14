@@ -7,6 +7,7 @@ import {
 } from 'recharts'
 import type { TeamScores } from '../engine/scorer'
 import { FlagImg } from './FlagImg'
+import { computeTournamentPerf } from '../utils/tournamentPerf'
 
 const groupColors: Record<string, { bg: string; text: string }> = {
   A: { bg: '#1e3a5f', text: '#93c5fd' },
@@ -36,6 +37,12 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
   )
 
   const display = topN ? sorted.slice(0, topN) : sorted
+
+  // Tournament performance from actual match results
+  const perfMap = useMemo(() => {
+    const perfs = computeTournamentPerf()
+    return new Map(perfs.map(p => [p.teamId, p]))
+  }, [])
 
   // Top 10 chart data
   const chartData = useMemo(() => {
@@ -157,14 +164,20 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
                   {s.raw.marketVal}
                 </td>
                 <td className="px-3 py-2.5 text-right max-sm:hidden">
-                  <span className={`font-bold font-mono ${
-                    s.raw.worldCupPerf >= 80 ? 'text-red-400' :
-                    s.raw.worldCupPerf >= 60 ? 'text-orange-400' :
-                    s.raw.worldCupPerf >= 40 ? 'text-yellow-400' :
-                    'text-slate-400'
-                  }`}>
-                    {s.raw.worldCupPerf}
-                  </span>
+                  {(() => {
+                    const tp = perfMap.get(s.teamId)
+                    const hasResults = tp?.hasResults ?? false
+                    const value = hasResults ? tp!.perf : s.raw.worldCupPerf
+                    return (
+                      <span className={`font-bold font-mono ${
+                        hasResults
+                          ? value >= 80 ? 'text-red-400' : value >= 60 ? 'text-orange-400' : value >= 40 ? 'text-yellow-400' : 'text-slate-400'
+                          : 'text-slate-500'
+                      }`}>
+                        {hasResults ? '' : '📋 '}{value}
+                      </span>
+                    )
+                  })()}
                 </td>
                 <td className="px-3 py-2.5 text-right text-slate-300 font-mono hidden sm:table-cell">
                   {s.raw.goals}

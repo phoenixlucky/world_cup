@@ -11,6 +11,9 @@ const links = [
   { to: '/knockout', label: '🏆 淘汰赛', title: '32 强晋级树' },
   { to: '/prediction', label: '🔮 冠军预测', title: '蒙特卡洛夺冠概率' },
   { to: '/schedule', label: '📅 赛程', title: '比赛日程查询' },
+  { to: '/accuracy', label: '📊 准确性', title: '预测准确性统计' },
+  { to: '/changelog', label: '📜 更新日志', title: '算法更新记录' },
+  { to: '/world-cup-perf', label: '🏅 世界杯表现', title: '各队表现评分' },
 ]
 
 export function Navbar() {

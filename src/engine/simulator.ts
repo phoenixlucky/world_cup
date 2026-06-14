@@ -5,11 +5,15 @@
  *   1. Group stage (12 groups × 4 teams, round-robin)
  *   2. Knockout stage (32 teams → 16 → 8 → 4 → 2 → 1)
  *
- * Match outcome probabilities are derived from the team's combined score.
+ * Match outcomes are generated using Poisson-distributed scores
+ * calibrated to real-world football statistics:
+ *   WDL: ~45% home / 25% draw / 30% away
+ *   Score distribution matches top-5 league & World Cup data
  */
 
 import type { TeamScores } from './scorer'
 import { teams } from '../data/teams'
+import { generateScore } from './poisson'
 
 // ── Types ─────────────────────────────────────────────────
 export interface MatchResult {
@@ -42,20 +46,9 @@ export interface SimulationResult {
 
 // ── Core simulation ───────────────────────────────────────
 
-/** Calculate expected goals for a team based on its score vs opponent */
-function expectedGoals(teamScore: number, opponentScore: number): number {
-  const ratio = teamScore / Math.max(opponentScore, 1)
-  // Scale: a team with 2x score scores ~2x goals
-  const base = 1.2 * ratio
-  return Math.max(0.3, Math.min(4.5, base + (Math.random() - 0.5) * 0.6))
-}
-
-/** Simulate a single match, return goals */
+/** Simulate a single match using Poisson-distributed goals */
 function simulateMatch(home: TeamScores, away: TeamScores): [number, number] {
-  // Home advantage: +5% to score
-  const homeGoals = Math.round(expectedGoals(home.total * 1.05, away.total))
-  const awayGoals = Math.round(expectedGoals(away.total, home.total * 1.05))
-  return [homeGoals, awayGoals]
+  return generateScore(home.total, away.total)
 }
 
 /** Simulate one group (4 teams round-robin), return top 2 + best 3rd candidate */
