@@ -171,10 +171,6 @@ export function computeTournamentPerf(): TeamPerf[] {
     liveScores = { ...liveScores, ...stored }
   } catch { /* ignore */ }
 
-  // Build team data maps
-  const teamMap = new Map(teams.map(t => [t.id, t]))
-  const preTournPerf = new Map(teams.map(t => [t.id, t.worldCupPerf]))
-
   // Collect results per team
   const stats = new Map<string, {
     played: number; won: number; drawn: number; lost: number
@@ -186,7 +182,6 @@ export function computeTournamentPerf(): TeamPerf[] {
   }
 
   const matches = buildGroupMatches()
-  const teamNameMap = new Map(teams.map(t => [t.id, t]))
 
   for (const m of matches) {
     const score = liveScores[m.id]

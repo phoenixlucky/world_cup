@@ -89,7 +89,7 @@ export function predictMostLikelyScore(
 
   for (let h = 0; h <= 6; h++) {
     for (let a = 0; a <= 6; a++) {
-      const prob = poissonPMF(h, hλ) * poissonPMF(a, a)
+      const prob = poissonPMF(h, hλ) * poissonPMF(a, aλ)
       // Weight by plausibility — cap low-prob scores slightly
       if (prob > bestProb) {
         bestProb = prob
