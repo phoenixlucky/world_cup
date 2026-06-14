@@ -106,7 +106,7 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
                 <td className="px-3 py-2.5 text-slate-500 font-mono text-xs">
                   {i + 1}
                 </td>
-                <td className="px-3 py-2.5">
+                <td className="px-3 py-2.5 whitespace-nowrap">
                   <span className="text-xl mr-2"><FlagImg code={s.flagCode} size={20} /></span>
                   <span className="text-white font-medium">{s.teamNameCN}</span>
                   <span className="text-slate-500 ml-1.5 text-xs hidden sm:inline">
