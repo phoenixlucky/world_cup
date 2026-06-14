@@ -37,13 +37,13 @@ function SummaryCards({ stats }: { stats: AccuracyStats }) {
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {/* Total */}
       <div className="bg-slate-800/70 border border-slate-700 rounded-xl px-5 py-4">
-        <div className="text-slate-400 text-xs font-medium uppercase tracking-wide">已完赛场次</div>
+        <div className="text-slate-400 text-xs font-medium uppercase tracking-wide whitespace-nowrap">已完赛场次</div>
         <div className="text-3xl font-bold text-white mt-1">{stats.totalMatches}</div>
       </div>
 
       {/* Outcome accuracy */}
       <div className="bg-slate-800/70 border border-slate-700 rounded-xl px-5 py-4">
-        <div className="text-slate-400 text-xs font-medium uppercase tracking-wide">胜负平准确率</div>
+        <div className="text-slate-400 text-xs font-medium uppercase tracking-wide whitespace-nowrap">胜负平准确率</div>
         <div className="flex items-baseline gap-2 mt-1">
           <span className="text-3xl font-bold text-blue-400">{outcomePct}%</span>
           <span className="text-sm text-slate-500">
@@ -54,7 +54,7 @@ function SummaryCards({ stats }: { stats: AccuracyStats }) {
 
       {/* Score accuracy */}
       <div className="bg-slate-800/70 border border-slate-700 rounded-xl px-5 py-4">
-        <div className="text-slate-400 text-xs font-medium uppercase tracking-wide">比分准确率</div>
+        <div className="text-slate-400 text-xs font-medium uppercase tracking-wide whitespace-nowrap">比分准确率</div>
         <div className="flex items-baseline gap-2 mt-1">
           <span className="text-3xl font-bold text-green-400">{scorePct}%</span>
           <span className="text-sm text-slate-500">
@@ -115,12 +115,12 @@ function OutcomeAccuracySection({ stats }: { stats: AccuracyStats }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-slate-400 text-xs uppercase border-b border-slate-700/50">
-              <th className="text-left px-4 py-3 font-medium">比赛</th>
-              <th className="text-center px-3 py-3 font-medium">实际比分</th>
-              <th className="text-center px-3 py-3 font-medium">预测比分</th>
-              <th className="text-center px-3 py-3 font-medium">实际结果</th>
-              <th className="text-center px-3 py-3 font-medium">预测结果</th>
-              <th className="text-center px-3 py-3 font-medium">判定</th>
+              <th className="text-left px-4 py-3 font-medium whitespace-nowrap">比赛</th>
+              <th className="text-center px-3 py-3 font-medium whitespace-nowrap">实际比分</th>
+              <th className="text-center px-3 py-3 font-medium whitespace-nowrap">预测比分</th>
+              <th className="text-center px-3 py-3 font-medium whitespace-nowrap">实际结果</th>
+              <th className="text-center px-3 py-3 font-medium whitespace-nowrap">预测结果</th>
+              <th className="text-center px-3 py-3 font-medium whitespace-nowrap">判定</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
@@ -205,11 +205,11 @@ function ScoreAccuracySection({ stats }: { stats: AccuracyStats }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-slate-400 text-xs uppercase border-b border-slate-700/50">
-              <th className="text-left px-4 py-3 font-medium">比赛</th>
-              <th className="text-center px-3 py-3 font-medium">实际比分</th>
-              <th className="text-center px-3 py-3 font-medium">预测比分</th>
-              <th className="text-center px-3 py-3 font-medium">偏差</th>
-              <th className="text-center px-3 py-3 font-medium">判定</th>
+              <th className="text-left px-4 py-3 font-medium whitespace-nowrap">比赛</th>
+              <th className="text-center px-3 py-3 font-medium whitespace-nowrap">实际比分</th>
+              <th className="text-center px-3 py-3 font-medium whitespace-nowrap">预测比分</th>
+              <th className="text-center px-3 py-3 font-medium whitespace-nowrap">偏差</th>
+              <th className="text-center px-3 py-3 font-medium whitespace-nowrap">判定</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
