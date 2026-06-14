@@ -129,19 +129,19 @@ function OutcomeAccuracySection({ stats }: { stats: AccuracyStats }) {
                 <td className="px-4 py-3 text-white whitespace-nowrap">
                   {d.homeName} vs {d.awayName}
                 </td>
-                <td className="px-3 py-3 text-center font-mono font-bold text-green-400">
+                <td className="px-3 py-3 text-center font-mono font-bold text-green-400 whitespace-nowrap">
                   {d.actualScore}
                 </td>
-                <td className="px-3 py-3 text-center font-mono text-orange-400">
+                <td className="px-3 py-3 text-center font-mono text-orange-400 whitespace-nowrap">
                   {d.predictedScore}
                 </td>
-                <td className="px-3 py-3 text-center">
+                <td className="px-3 py-3 text-center whitespace-nowrap">
                   <OutcomeBadge outcome={d.actualOutcome} />
                 </td>
-                <td className="px-3 py-3 text-center">
+                <td className="px-3 py-3 text-center whitespace-nowrap">
                   <OutcomeBadge outcome={d.predictedOutcome} />
                 </td>
-                <td className="px-3 py-3 text-center">
+                <td className="px-3 py-3 text-center whitespace-nowrap">
                   {d.outcomeCorrect
                     ? <span className="text-green-400 text-lg" title="胜负平正确">✅</span>
                     : <span className="text-red-400 text-lg" title="胜负平错误">❌</span>
@@ -224,16 +224,16 @@ function ScoreAccuracySection({ stats }: { stats: AccuracyStats }) {
                   <td className="px-4 py-3 text-white whitespace-nowrap">
                     {d.homeName} vs {d.awayName}
                   </td>
-                  <td className="px-3 py-3 text-center font-mono font-bold text-green-400">
+                  <td className="px-3 py-3 text-center font-mono font-bold text-green-400 whitespace-nowrap">
                     {d.actualScore}
                   </td>
-                  <td className="px-3 py-3 text-center font-mono text-orange-400">
+                  <td className="px-3 py-3 text-center font-mono text-orange-400 whitespace-nowrap">
                     {d.predictedScore}
                   </td>
-                  <td className="px-3 py-3 text-center font-mono text-slate-400 text-xs">
+                  <td className="px-3 py-3 text-center font-mono text-slate-400 text-xs whitespace-nowrap">
                     {diffStr}
                   </td>
-                  <td className="px-3 py-3 text-center">
+                  <td className="px-3 py-3 text-center whitespace-nowrap">
                     {d.scoreCorrect
                       ? <span className="text-green-400 text-lg" title="比分准确">✅</span>
                       : <span className="text-red-400 text-lg" title="比分错误">❌</span>
