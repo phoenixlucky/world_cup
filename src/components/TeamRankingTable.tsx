@@ -87,14 +87,14 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
               <th className="px-3 py-3 font-medium">#</th>
               <th className="px-3 py-3 font-medium">球队</th>
               <th className="px-3 py-3 font-medium">组别</th>
-              <th className="px-3 py-3 font-medium text-right max-sm:hidden">进攻火力</th>
-              <th className="px-3 py-3 font-medium text-right hidden sm:table-cell">防守稳固度</th>
+              <th className="px-3 py-3 font-medium text-right whitespace-nowrap">进攻火力</th>
+              <th className="px-3 py-3 font-medium text-right whitespace-nowrap">防守稳固度</th>
               <th className="px-3 py-3 font-medium text-right">综合评分</th>
               <th className="px-3 py-3 font-medium text-right">FIFA排名</th>
               <th className="px-3 py-3 font-medium text-right">身价(€M)</th>
-              <th className="px-3 py-3 font-medium text-right max-sm:hidden">世界杯表现</th>
-              <th className="px-3 py-3 font-medium text-right hidden sm:table-cell">近20场进球</th>
-              <th className="px-3 py-3 font-medium text-right hidden md:table-cell">胜率</th>
+              <th className="px-3 py-3 font-medium text-right whitespace-nowrap">世界杯表现</th>
+              <th className="px-3 py-3 font-medium text-right whitespace-nowrap">近20场进球</th>
+              <th className="px-3 py-3 font-medium text-right whitespace-nowrap">胜率</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700">
@@ -122,7 +122,7 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
                     {s.group}
                   </span>
                 </td>
-                <td className="px-3 py-2.5 text-right max-sm:hidden">
+                <td className="px-3 py-2.5 text-right whitespace-nowrap">
                   <span className={`font-bold font-mono ${
                     s.raw.goals / 20 >= 1.8 ? 'text-green-400' :
                     s.raw.goals / 20 >= 1.2 ? 'text-blue-400' :
@@ -131,7 +131,7 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
                     {(s.raw.goals / 20).toFixed(1)}
                   </span>
                 </td>
-                <td className="px-3 py-2.5 text-right hidden sm:table-cell">
+                <td className="px-3 py-2.5 text-right whitespace-nowrap">
                   <span className={`font-bold font-mono ${
                     (5 - s.raw.goalsAgainst / 20) >= 3.5 ? 'text-green-400' :
                     (5 - s.raw.goalsAgainst / 20) >= 2.5 ? 'text-blue-400' :
@@ -163,7 +163,7 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
                 <td className="px-3 py-2.5 text-right text-slate-300 font-mono">
                   {s.raw.marketVal}
                 </td>
-                <td className="px-3 py-2.5 text-right max-sm:hidden">
+                <td className="px-3 py-2.5 text-right whitespace-nowrap">
                   {(() => {
                     const tp = perfMap.get(s.teamId)
                     const hasResults = tp?.hasResults ?? false
@@ -179,10 +179,10 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
                     )
                   })()}
                 </td>
-                <td className="px-3 py-2.5 text-right text-slate-300 font-mono hidden sm:table-cell">
+                <td className="px-3 py-2.5 text-right text-slate-300 font-mono whitespace-nowrap">
                   {s.raw.goals}
                 </td>
-                <td className="px-3 py-2.5 text-right text-slate-300 font-mono hidden md:table-cell">
+                <td className="px-3 py-2.5 text-right text-slate-300 font-mono whitespace-nowrap">
                   {s.raw.wins}/20
                 </td>
               </tr>

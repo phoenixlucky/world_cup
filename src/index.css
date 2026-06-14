@@ -26,11 +26,6 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Prevent horizontal overflow on mobile */
-#root {
-  overflow-x: hidden;
-}
-
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
