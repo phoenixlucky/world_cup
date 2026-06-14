@@ -705,12 +705,12 @@ export function ScheduleView() {
                   scoreContent = (
                     <div className="flex flex-col items-center">
                       <span className="text-green-400 font-bold text-lg">{storedScore}</span>
-                      {predStr && <span className="flex items-center gap-1 text-orange-400 text-xs font-medium">
+                      {predStr && <span className="flex items-center gap-1 text-orange-400 text-xs font-medium whitespace-nowrap">
                         {comparison && <span className={comparison.color}>{comparison.icon}</span>}
                         预测 {predStr}
                       </span>}
                       {comparison && comparison.label !== '预测准确' && (
-                        <span className={`${comparison.color} text-[10px] font-medium`}>{comparison.label}</span>
+                        <span className={`${comparison.color} text-[10px] font-medium whitespace-nowrap`}>{comparison.label}</span>
                       )}
                     </div>
                   )
@@ -734,13 +734,13 @@ export function ScheduleView() {
                             if (el && /^\d-\d$/.test(el.value)) setScore(m.id, el.value)
                           }}>确认</button>
                       </span>
-                      <span className="text-orange-400 text-xs">预测 {predStr}</span>
+                      <span className="text-orange-400 text-xs whitespace-nowrap">预测 {predStr}</span>
                     </div>
                   )
                 } else if (!past && home && away) {
                   const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
                   const predStr = predicted || `${ph}-${pa}`
-                  scoreContent = <span className="text-orange-400 font-bold text-lg">预测 {predStr}</span>
+                  scoreContent = <span className="text-orange-400 font-bold text-lg whitespace-nowrap">预测 {predStr}</span>
                 }
 
                 if (m.round === 'ceremony') {
