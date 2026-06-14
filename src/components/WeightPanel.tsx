@@ -16,6 +16,7 @@ const labels: { key: keyof Weights; label: string; color: string }[] = [
   { key: 'opponentStrength', label: '📊 对手强度', color: '#8b5cf6' },
   { key: 'wins', label: '🏆 胜场加权', color: '#a855f7' },
   { key: 'form', label: '📈 状态加权', color: '#ec4899' },
+  { key: 'worldCupPerf', label: '🏟️ 世界杯表现', color: '#ef4444' },
   { key: 'luck', label: '🍀 运气加权', color: '#f97316' },
   { key: 'hostBonus', label: '🌍 州加成', color: '#14b8a6' },
 ]
@@ -65,7 +66,7 @@ export function WeightPanel({ weights, onChange }: Props) {
 
       <button
         onClick={() =>
-          onChange({ rank: 15, marketVal: 10, goals: 8, attackDefense: 20, opponentStrength: 11, wins: 16, form: 10, luck: 5, hostBonus: 5 })
+          onChange({ rank: 14, marketVal: 9, goals: 7, attackDefense: 18, opponentStrength: 10, wins: 14, form: 9, luck: 5, hostBonus: 5, worldCupPerf: 10 })
         }
         className="mt-4 w-full py-3 sm:py-2 px-4 bg-slate-700 hover:bg-slate-600 text-slate-200
                    rounded-lg text-sm font-medium transition-colors"

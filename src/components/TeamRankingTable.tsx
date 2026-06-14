@@ -85,6 +85,7 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
               <th className="px-3 py-3 font-medium text-right">综合评分</th>
               <th className="px-3 py-3 font-medium text-right">FIFA排名</th>
               <th className="px-3 py-3 font-medium text-right">身价(€M)</th>
+              <th className="px-3 py-3 font-medium text-right max-sm:hidden">世界杯表现</th>
               <th className="px-3 py-3 font-medium text-right hidden sm:table-cell">近20场进球</th>
               <th className="px-3 py-3 font-medium text-right hidden md:table-cell">胜率</th>
             </tr>
@@ -154,6 +155,16 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
                 </td>
                 <td className="px-3 py-2.5 text-right text-slate-300 font-mono">
                   {s.raw.marketVal}
+                </td>
+                <td className="px-3 py-2.5 text-right max-sm:hidden">
+                  <span className={`font-bold font-mono ${
+                    s.raw.worldCupPerf >= 80 ? 'text-red-400' :
+                    s.raw.worldCupPerf >= 60 ? 'text-orange-400' :
+                    s.raw.worldCupPerf >= 40 ? 'text-yellow-400' :
+                    'text-slate-400'
+                  }`}>
+                    {s.raw.worldCupPerf}
+                  </span>
                 </td>
                 <td className="px-3 py-2.5 text-right text-slate-300 font-mono hidden sm:table-cell">
                   {s.raw.goals}

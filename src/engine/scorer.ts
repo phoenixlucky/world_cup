@@ -1,8 +1,8 @@
 /**
- * scorer.ts — 7-dimension scoring engine
+ * scorer.ts — 10-dimension scoring engine
  *
  * Each dimension is normalised to [0, 100] via min-max scaling.
- * The final score is a weighted sum of all 7 dimensions.
+ * The final score is a weighted sum of all 10 dimensions.
  */
 
 import type { Team } from '../data/teams'
@@ -18,18 +18,20 @@ export interface Weights {
   hostBonus: number   // 州加成
   attackDefense: number // 攻防专项能力
   opponentStrength: number // 对手强度校准
+  worldCupPerf: number // 本次世界杯表现得分
 }
 
 export const DEFAULT_WEIGHTS: Weights = {
-  rank: 15,
-  marketVal: 10,
-  goals: 8,
-  wins: 16,
-  form: 10,
+  rank: 14,
+  marketVal: 9,
+  goals: 7,
+  wins: 14,
+  form: 9,
   luck: 5,
   hostBonus: 5,
-  attackDefense: 20,
-  opponentStrength: 11,
+  attackDefense: 18,
+  opponentStrength: 10,
+  worldCupPerf: 10,
 }
 
 // ── Continent host bonus multipliers ─────────────────────
@@ -68,6 +70,7 @@ export interface TeamScores {
     goalsAgainst: number
     wins: number
     form: number
+    worldCupPerf: number
   }
   dim: {
     rank: number
@@ -79,11 +82,12 @@ export interface TeamScores {
     hostBonus: number
     attackDefense: number
     opponentStrength: number
+    worldCupPerf: number
   }
   total: number  // weighted sum
 }
 
-type NumericKey = 'rank' | 'marketVal' | 'goals' | 'wins' | 'attackDefense' | 'opponentStrength'
+type NumericKey = 'rank' | 'marketVal' | 'goals' | 'wins' | 'attackDefense' | 'opponentStrength' | 'worldCupPerf'
 
 /** Min-max normalise an array of numbers to [0, 100] (higher = better).
  *  For rank, lower is better so we invert. */
@@ -156,6 +160,7 @@ function computeScoresRaw(teams: Team[], weights: Weights): TeamScores[] {
   const winRates = teams.map(t => (t.wins20 / Math.max(t.wins20 + t.losses20 + t.draws20, 1)) * 100)
   const gdRaw = teams.map(t => (t.goalsFor20 - t.goalsAgainst20) / 20 * 10 + 50) // goal diff per game scaled
   const osRaw = teams.map(t => (OPPONENT_STRENGTH[t.continent] ?? 1.0) * 100) // opponent strength
+  const wcRaw = teams.map(t => t.worldCupPerf) // already 0-100
 
   // --- 2. Normalise ---
   const rankNorm = normalise(rankRaw, 'rank')
@@ -164,12 +169,14 @@ function computeScoresRaw(teams: Team[], weights: Weights): TeamScores[] {
   const winNorm = normalise(winRates, 'wins')
   const adNorm = normalise(gdRaw, 'attackDefense')
   const osNorm = normalise(osRaw, 'opponentStrength')
+  const wcNorm = normalise(wcRaw, 'worldCupPerf')
 
   // --- 3. Build scores ---
   const totalWeight =
     weights.rank + weights.marketVal + weights.goals + weights.wins +
     weights.form + weights.luck + weights.hostBonus +
-    weights.attackDefense + weights.opponentStrength || 1
+    weights.attackDefense + weights.opponentStrength +
+    weights.worldCupPerf || 1
 
   return teams.map((t, i) => {
     const fScore = formScore(t.recentForm)
@@ -186,6 +193,7 @@ function computeScoresRaw(teams: Team[], weights: Weights): TeamScores[] {
       hostBonus: hBonus,
       attackDefense: adNorm[i],
       opponentStrength: osNorm[i],
+      worldCupPerf: wcNorm[i],
     }
 
     const total = (
@@ -197,7 +205,8 @@ function computeScoresRaw(teams: Team[], weights: Weights): TeamScores[] {
       dim.luck * weights.luck +
       dim.hostBonus * weights.hostBonus +
       dim.attackDefense * weights.attackDefense +
-      dim.opponentStrength * weights.opponentStrength
+      dim.opponentStrength * weights.opponentStrength +
+      dim.worldCupPerf * weights.worldCupPerf
     ) / totalWeight
 
     return {
@@ -215,6 +224,7 @@ function computeScoresRaw(teams: Team[], weights: Weights): TeamScores[] {
         goalsAgainst: t.goalsAgainst20,
         wins: t.wins20,
         form: fScore,
+        worldCupPerf: t.worldCupPerf,
       },
       dim,
       total: Math.round(total * 100) / 100,
