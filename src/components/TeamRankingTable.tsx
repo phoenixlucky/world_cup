@@ -85,13 +85,13 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
           <thead>
             <tr className="bg-slate-800 text-slate-400 text-left">
               <th className="px-3 py-3 font-medium">#</th>
-              <th className="px-3 py-3 font-medium">球队</th>
-              <th className="px-3 py-3 font-medium">组别</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap">球队</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap">组别</th>
               <th className="px-3 py-3 font-medium text-right whitespace-nowrap">进攻火力</th>
               <th className="px-3 py-3 font-medium text-right whitespace-nowrap">防守稳固度</th>
-              <th className="px-3 py-3 font-medium text-right">综合评分</th>
-              <th className="px-3 py-3 font-medium text-right">FIFA排名</th>
-              <th className="px-3 py-3 font-medium text-right">身价(€M)</th>
+              <th className="px-3 py-3 font-medium text-right whitespace-nowrap">综合评分</th>
+              <th className="px-3 py-3 font-medium text-right whitespace-nowrap">FIFA排名</th>
+              <th className="px-3 py-3 font-medium text-right whitespace-nowrap">身价(€M)</th>
               <th className="px-3 py-3 font-medium text-right whitespace-nowrap">世界杯表现</th>
               <th className="px-3 py-3 font-medium text-right whitespace-nowrap">近20场进球</th>
               <th className="px-3 py-3 font-medium text-right whitespace-nowrap">胜率</th>
@@ -140,7 +140,7 @@ export function TeamRankingTable({ scores, topN, showChart = true }: Props) {
                     {(5 - s.raw.goalsAgainst / 20).toFixed(1)}
                   </span>
                 </td>
-                <td className="px-3 py-2.5 text-right">
+                <td className="px-3 py-2.5 text-right whitespace-nowrap">
                   <span className={`font-bold font-mono ${
                     s.total >= 70 ? 'text-green-400' :
                     s.total >= 55 ? 'text-blue-400' :
