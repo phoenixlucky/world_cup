@@ -370,7 +370,126 @@ const matchNotes: Record<string, string> = {
   'g-C-1': '0-1 vs 预测0-3 | 海地密集防守顽强抵抗85分钟，麦金角球头槌绝杀；全场苏格兰控球72%却破门乏术',
 }
 
-/** Predict score from team strength ratio */
+// ── ESPN API sync ──────────────────────────────────────────
+
+/** ESPN 3-letter abbreviation → our team id */
+const ESPN_TEAM_MAP: Record<string, string> = {
+  QAT: 'qatar', SUI: 'switzerland', BRA: 'brazil', MAR: 'morocco',
+  HAI: 'haiti', SCO: 'scotland', MEX: 'mexico', RSA: 'south-africa',
+  KOR: 'south-korea', CZE: 'czech-republic', CAN: 'canada', BIH: 'bosnia',
+  USA: 'usa', PAR: 'paraguay', AUS: 'australia', TUR: 'turkey',
+  GER: 'germany', CUW: 'curacao', CIV: 'ivory-coast', ECU: 'ecuador',
+  NED: 'netherlands', JPN: 'japan', SWE: 'sweden', TUN: 'tunisia',
+  BEL: 'belgium', EGY: 'egypt', IRN: 'iran', NZL: 'new-zealand',
+  CPV: 'cape-verde', KSA: 'saudi-arabia', ESP: 'spain', URU: 'uruguay',
+  FRA: 'france', IRQ: 'iraq', NOR: 'norway', SEN: 'senegal',
+  ALG: 'algeria', ARG: 'argentina', AUT: 'austria', JOR: 'jordan',
+  POR: 'portugal', COD: 'dr-congo', UZB: 'uzbekistan', COL: 'colombia',
+  ENG: 'england', CRO: 'croatia', GHA: 'ghana', PAN: 'panama',
+}
+
+/** Fetch completed match scores from ESPN API for a given date (YYYYMMDD) */
+async function fetchEspnDate(dateStr: string): Promise<Record<string, string>> {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${dateStr}`
+  const res = await fetch(url)
+  if (!res.ok) return {}
+  const data = await res.json() as {
+    events?: Array<{
+      competitions?: Array<{
+        status?: { type?: { completed?: boolean; state?: string } }
+        competitors?: Array<{
+          score?: string
+          team?: { abbreviation?: string }
+          homeAway?: string
+        }>
+      }>
+    }>
+  }
+  const result: Record<string, string> = {}
+  for (const ev of data.events || []) {
+    const comp = ev.competitions?.[0]
+    if (!comp) continue
+    // Only completed matches
+    if (!comp.status?.type?.completed && comp.status?.type?.state !== 'post') continue
+    const home = comp.competitors?.find(c => c.homeAway === 'home')
+    const away = comp.competitors?.find(c => c.homeAway === 'away')
+    if (!home || !away) continue
+    const homeAbbr = home.team?.abbreviation
+    const awayAbbr = away.team?.abbreviation
+    if (!homeAbbr || !awayAbbr) continue
+    const homeId = ESPN_TEAM_MAP[homeAbbr]
+    const awayId = ESPN_TEAM_MAP[awayAbbr]
+    if (!homeId || !awayId) continue
+    // Find the match ID from our schedule
+    const match = allMatches.find(m =>
+      m.home === homeId && m.away === awayId &&
+      parseDateNum(m.date) === parseInt(dateStr.slice(4))
+    )
+    if (match) {
+      result[match.id] = `${home.score}-${away.score}`
+    }
+  }
+  return result
+}
+
+/** Fetch all completed scores from tournament start to today */
+async function fetchAllEspnScores(): Promise<Record<string, string>> {
+  const today = new Date()
+  const start = new Date(2026, 5, 11) // June 11, 2026
+  const all: Record<string, string> = {}
+  for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
+    const ds = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+    const scores = await fetchEspnDate(ds)
+    Object.assign(all, scores)
+  }
+  return all
+}
+
+// ── Sync button component ──────────────────────────────────
+function SyncButton({ setLiveScores }: { setLiveScores: React.Dispatch<React.SetStateAction<Record<string, string>>> }) {
+  const [syncing, setSyncing] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+
+  const handleSync = useCallback(async () => {
+    setSyncing(true)
+    setMsg(null)
+    try {
+      const scores = await fetchAllEspnScores()
+      const count = Object.keys(scores).length
+      if (count > 0) {
+        setLiveScores(prev => ({ ...prev, ...scores }))
+        localStorage.setItem('wc26-scores', JSON.stringify({ ...scores }))
+        setMsg(`✅ 已同步 ${count} 场比分`)
+      } else {
+        setMsg('⚠️ 暂无新的已完赛比分')
+      }
+    } catch {
+      setMsg('❌ 同步失败，请稍后重试')
+    } finally {
+      setSyncing(false)
+      setTimeout(() => setMsg(null), 4000)
+    }
+  }, [setLiveScores])
+
+  return (
+    <div className="relative flex items-center">
+      <button
+        onClick={handleSync}
+        disabled={syncing}
+        className="px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50
+                   text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+      >
+        {syncing ? '⏳ 同步中…' : '🔄 同步ESPN比分'}
+      </button>
+      {msg && (
+        <span className="absolute top-full mt-1 right-0 text-xs text-slate-300 bg-slate-800 px-2 py-1 rounded shadow whitespace-nowrap z-10">
+          {msg}
+        </span>
+      )}
+    </div>
+  )
+}
+
 function predictScore(homeId: string, awayId: string, tm: Map<string, number>): [number, number] {
   const hs = tm.get(homeId) || 50
   const as = tm.get(awayId) || 50
@@ -492,6 +611,7 @@ export function ScheduleView() {
         <span className="text-sm text-slate-400 self-center ml-auto">
           共 {filtered.length} 场
         </span>
+        <SyncButton setLiveScores={setLiveScores} />
       </div>
 
       {/* Schedule */}
