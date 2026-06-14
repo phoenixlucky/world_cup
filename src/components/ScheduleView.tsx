@@ -368,6 +368,7 @@ const matchNotes: Record<string, string> = {
   'g-B-1': '1-1 vs 预测1-2 | 恩博洛17分钟点球首开纪录；瑞士89分钟乌龙送礼（穆海姆），卡塔尔补时绝平拿历史首分',
   'g-C-0': '1-1 vs 预测3-1 | 摩洛哥赛巴里21分钟先拔头筹；维尼修斯32分钟凌空斩扳平，巴西狂攻未果',
   'g-C-1': '0-1 vs 预测0-3 | 海地密集防守顽强抵抗85分钟，麦金角球头槌绝杀；全场苏格兰控球72%却破门乏术',
+  'g-D-1': '2-0 vs 预测1-2 | 伊兰昆达27分钟凌空抽射首秀破门，梅特卡夫75分钟单刀锁定胜局；土耳其控球72%狂射30脚无一命中',
 }
 
 // ── ESPN API sync ──────────────────────────────────────────
@@ -420,10 +421,9 @@ async function fetchEspnDate(dateStr: string): Promise<Record<string, string>> {
     const homeId = ESPN_TEAM_MAP[homeAbbr]
     const awayId = ESPN_TEAM_MAP[awayAbbr]
     if (!homeId || !awayId) continue
-    // Find the match ID from our schedule
+    // Find the match ID from our schedule (match by teams only, no date check — ESPN uses UTC date)
     const match = allMatches.find(m =>
-      m.home === homeId && m.away === awayId &&
-      parseDateNum(m.date) === parseInt(dateStr.slice(4))
+      m.home === homeId && m.away === awayId
     )
     if (match) {
       result[match.id] = `${home.score}-${away.score}`
@@ -513,6 +513,7 @@ export function ScheduleView() {
         'g-B-1': '1-1',   // Qatar 1-1 Switzerland
         'g-C-0': '1-1',   // Brazil 1-1 Morocco
         'g-C-1': '0-1',   // Haiti 0-1 Scotland
+        'g-D-1': '2-0',   // Australia 2-0 Turkey
         ...JSON.parse(localStorage.getItem('wc26-scores') || '{}'),
       }
     } catch { return {
@@ -520,6 +521,7 @@ export function ScheduleView() {
       'g-B-0': '1-1', 'g-D-0': '4-1',
       'g-B-1': '1-1', 'g-C-0': '1-1',
       'g-C-1': '0-1',
+      'g-D-1': '2-0',
     } }
   })
 
