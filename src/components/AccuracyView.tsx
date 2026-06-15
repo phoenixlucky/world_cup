@@ -90,7 +90,7 @@ function OutcomeAccuracySection({ stats }: { stats: AccuracyStats }) {
     })
     if (sortBy === 'result') {
       list.sort((a, b) => {
-        const order = { '✅': 0, '⚠️': 1, '❌': 2 }
+        const order: Record<string, number> = { '✅': 0, '⚠️': 1, '❌': 2 }
         return (order[a.comparison.icon] ?? 0) - (order[b.comparison.icon] ?? 0)
       })
     }
