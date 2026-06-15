@@ -7,6 +7,7 @@
  */
 import { useMemo, useState } from 'react'
 import { computeAccuracy, type AccuracyStats } from '../utils/accuracy'
+import { matchNotes } from './ScheduleView'
 
 export function AccuracyView() {
   const stats = useMemo(() => computeAccuracy(), [])
@@ -72,12 +73,26 @@ function OutcomeAccuracySection({ stats }: { stats: AccuracyStats }) {
   const [sortBy, setSortBy] = useState<'match' | 'result'>('match')
 
   const items = useMemo(() => {
-    const list = stats.matchDetails.map(d => ({
-      ...d,
-      outcomeLabel: outcomeLabel(d.actualOutcome, d.predictedOutcome),
-    }))
+    const list = stats.matchDetails.map(d => {
+      const [aH, aA] = d.actualScore.split('-').map(Number)
+      const [pH, pA] = d.predictedScore.split('-').map(Number)
+      let comparison: { icon: string; label: string; color: string }
+      if (aH === pH && aA === pA) {
+        comparison = { icon: '✅', label: '预测准确', color: 'text-green-400' }
+      } else {
+        const actualWinner = aH > aA ? 'home' : aA > aH ? 'away' : 'draw'
+        const predWinner = pH > pA ? 'home' : pA > pH ? 'away' : 'draw'
+        comparison = actualWinner === predWinner
+          ? { icon: '⚠️', label: '方向对·比分差', color: 'text-yellow-400' }
+          : { icon: '❌', label: '预测错误', color: 'text-red-400' }
+      }
+      return { ...d, comparison }
+    })
     if (sortBy === 'result') {
-      list.sort((a, b) => Number(a.outcomeCorrect) - Number(b.outcomeCorrect))
+      list.sort((a, b) => {
+        const order = { '✅': 0, '⚠️': 1, '❌': 2 }
+        return (order[a.comparison.icon] ?? 0) - (order[b.comparison.icon] ?? 0)
+      })
     }
     return list
   }, [stats, sortBy])
@@ -121,10 +136,15 @@ function OutcomeAccuracySection({ stats }: { stats: AccuracyStats }) {
               <th className="text-center px-3 py-3 font-medium whitespace-nowrap">实际结果</th>
               <th className="text-center px-3 py-3 font-medium whitespace-nowrap">预测结果</th>
               <th className="text-center px-3 py-3 font-medium whitespace-nowrap">判定</th>
+              <th className="text-left px-3 py-3 font-medium whitespace-nowrap hidden sm:table-cell">分析</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
-            {items.map(d => (
+            {items.map(d => {
+              const note = matchNotes[d.matchId] || ''
+              const sep = note.indexOf(' | ')
+              const analysis = sep > 0 ? note.slice(sep + 3) : ''
+              return (
               <tr key={d.matchId} className="hover:bg-slate-700/30 transition-colors">
                 <td className="px-4 py-3 text-white whitespace-nowrap">
                   {d.homeName} vs {d.awayName}
@@ -142,13 +162,21 @@ function OutcomeAccuracySection({ stats }: { stats: AccuracyStats }) {
                   <OutcomeBadge outcome={d.predictedOutcome} />
                 </td>
                 <td className="px-3 py-3 text-center whitespace-nowrap">
-                  {d.outcomeCorrect
-                    ? <span className="text-green-400 text-lg" title="胜负平正确">✅</span>
-                    : <span className="text-red-400 text-lg" title="胜负平错误">❌</span>
-                  }
+                  <span className={`${d.comparison.color} text-xs font-semibold`} title={d.comparison.label}>
+                    {d.comparison.icon} {d.comparison.label}
+                  </span>
+                </td>
+                <td className="px-3 py-3 text-left whitespace-nowrap hidden sm:table-cell">
+                  {analysis ? (
+                    <span className="text-green-400/80 text-[11px] leading-tight block max-w-[200px] truncate" title={analysis}>
+                      {analysis}
+                    </span>
+                  ) : (
+                    <span className="text-slate-600 text-[11px]">—</span>
+                  )}
                 </td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>
@@ -210,6 +238,7 @@ function ScoreAccuracySection({ stats }: { stats: AccuracyStats }) {
               <th className="text-center px-3 py-3 font-medium whitespace-nowrap">预测比分</th>
               <th className="text-center px-3 py-3 font-medium whitespace-nowrap">偏差</th>
               <th className="text-center px-3 py-3 font-medium whitespace-nowrap">判定</th>
+              <th className="text-left px-3 py-3 font-medium whitespace-nowrap hidden sm:table-cell">分析</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
@@ -219,6 +248,22 @@ function ScoreAccuracySection({ stats }: { stats: AccuracyStats }) {
               const diffH = pH - aH
               const diffA = pA - aA
               const diffStr = diffH === 0 && diffA === 0 ? '0' : `${diffH > 0 ? '+' : ''}${diffH}, ${diffA > 0 ? '+' : ''}${diffA}`
+              // Three-state comparison matching ScheduleView
+              let compIcon: string; let compLabel: string; let compColor: string
+              if (aH === pH && aA === pA) {
+                compIcon = '✅'; compLabel = '准确'; compColor = 'text-green-400'
+              } else {
+                const actualWinner = aH > aA ? 'home' : aA > aH ? 'away' : 'draw'
+                const predWinner = pH > pA ? 'home' : pA > pH ? 'away' : 'draw'
+                if (actualWinner === predWinner) {
+                  compIcon = '⚠️'; compLabel = '方向对'; compColor = 'text-yellow-400'
+                } else {
+                  compIcon = '❌'; compLabel = '错误'; compColor = 'text-red-400'
+                }
+              }
+              const note = matchNotes[d.matchId] || ''
+              const sep = note.indexOf(' | ')
+              const analysis = sep > 0 ? note.slice(sep + 3) : ''
               return (
                 <tr key={d.matchId} className="hover:bg-slate-700/30 transition-colors">
                   <td className="px-4 py-3 text-white whitespace-nowrap">
@@ -234,10 +279,18 @@ function ScoreAccuracySection({ stats }: { stats: AccuracyStats }) {
                     {diffStr}
                   </td>
                   <td className="px-3 py-3 text-center whitespace-nowrap">
-                    {d.scoreCorrect
-                      ? <span className="text-green-400 text-lg" title="比分准确">✅</span>
-                      : <span className="text-red-400 text-lg" title="比分错误">❌</span>
-                    }
+                    <span className={`${compColor} text-xs font-semibold`}>
+                      {compIcon} {compLabel}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-left whitespace-nowrap hidden sm:table-cell">
+                    {analysis ? (
+                      <span className="text-green-400/80 text-[11px] leading-tight block max-w-[200px] truncate" title={analysis}>
+                        {analysis}
+                      </span>
+                    ) : (
+                      <span className="text-slate-600 text-[11px]">—</span>
+                    )}
                   </td>
                 </tr>
               )
@@ -263,15 +316,4 @@ function OutcomeBadge({ outcome }: { outcome: 'home' | 'draw' | 'away' }) {
       {c.label}
     </span>
   )
-}
-
-function outcomeLabel(actual: 'home' | 'draw' | 'away', predicted: 'home' | 'draw' | 'away'): string {
-  if (actual === predicted) return '正确'
-  return `应${outcomeLabelShort(actual)}→预${outcomeLabelShort(predicted)}`
-}
-
-function outcomeLabelShort(o: 'home' | 'draw' | 'away'): string {
-  if (o === 'home') return '主胜'
-  if (o === 'away') return '客胜'
-  return '平'
 }

@@ -183,6 +183,8 @@ const DEFAULT_SCORES: Record<string, string> = {
   'g-C-0': '1-1',   // Brazil 1-1 Morocco
   'g-C-1': '0-1',   // Haiti 0-1 Scotland
   'g-D-1': '2-0',   // Australia 2-0 Turkey
+  'g-E-0': '7-1',   // Germany 7-1 Curacao
+  'g-F-0': '2-2',   // Netherlands 2-2 Japan
 }
 
 /** Hardcoded old-model predictions for the default-score matches.
@@ -196,6 +198,8 @@ const DEFAULT_PREDICTIONS: Record<string, string> = {
   'g-C-0': '2-1',   // Brazil 2-1 Morocco
   'g-C-1': '0-3',   // Haiti 0-3 Scotland
   'g-D-1': '1-2',   // Australia 1-2 Turkey
+  'g-E-0': '5-0',   // Germany 5-0 Curacao
+  'g-F-0': '1-1',   // Netherlands 1-1 Japan
 }
 
 export function computeAccuracy(): AccuracyStats {
@@ -210,6 +214,12 @@ export function computeAccuracy(): AccuracyStats {
   let cachedPreds: Record<string, string> = {}
   try {
     cachedPreds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
+  } catch { /* ignore */ }
+
+  // Also check frozen predictions (for matches within 2 days)
+  let frozenPreds: Record<string, string> = {}
+  try {
+    frozenPreds = JSON.parse(localStorage.getItem('wc26-frozen-predictions') || '{}')
   } catch { /* ignore */ }
 
   // Build team name map
@@ -228,9 +238,9 @@ export function computeAccuracy(): AccuracyStats {
     const awayTeam = teamMap.get(m.away)
     if (!homeTeam || !awayTeam) continue
 
-    // Use hardcoded default prediction first, then cached prediction.
+    // Use hardcoded default prediction first, then frozen, then cached.
     // Never recompute — completed-match predictions are written in stone.
-    const predicted = DEFAULT_PREDICTIONS[m.id] || cachedPreds[m.id] || ''
+    const predicted = DEFAULT_PREDICTIONS[m.id] || frozenPreds[m.id] || cachedPreds[m.id] || ''
     if (!predicted) continue
 
     const [aH, aA] = actualScore.split('-').map(Number)
