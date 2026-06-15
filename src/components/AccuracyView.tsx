@@ -93,6 +93,9 @@ function OutcomeAccuracySection({ stats }: { stats: AccuracyStats }) {
         const order: Record<string, number> = { '✅': 0, '⚠️': 1, '❌': 2 }
         return (order[a.comparison.icon] ?? 0) - (order[b.comparison.icon] ?? 0)
       })
+    } else {
+      // Sort by match time (dateNum then matchId for same-day)
+      list.sort((a, b) => a.dateNum - b.dateNum || a.matchId.localeCompare(b.matchId))
     }
     return list
   }, [stats, sortBy])

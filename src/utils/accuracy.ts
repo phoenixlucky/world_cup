@@ -21,6 +21,7 @@ interface Match {
 
 interface MatchAccuracy {
   matchId: string
+  dateNum: number
   homeName: string
   awayName: string
   actualScore: string       // "2-0"
@@ -257,6 +258,7 @@ export function computeAccuracy(): AccuracyStats {
 
     details.push({
       matchId: m.id,
+      dateNum: m.dateNum,
       homeName: homeTeam.nameCN || homeTeam.name,
       awayName: awayTeam.nameCN || awayTeam.name,
       actualScore,
