@@ -9,7 +9,7 @@
  *   - Editable scores for past matches (stored in localStorage)
  *   - Predicted scores for upcoming matches (from scorer engine)
  */
-import { useState, useMemo, useCallback, type ReactNode } from 'react'
+import { useState, useMemo, useCallback, useEffect, type ReactNode } from 'react'
 import { teams, groupNames } from '../data/teams'
 import { computeScores, DEFAULT_WEIGHTS } from '../engine/scorer'
 import { predictMostLikelyScore } from '../engine/poisson'
@@ -195,6 +195,36 @@ function isMatchPast(dateNum: number): boolean {
   return dateNum < todayNum
 }
 
+/** Check if match is within N days from today (including today) */
+function isMatchWithinDays(dateNum: number, days: number): boolean {
+  const now = new Date()
+  // Project today's month/day onto 2026 (all match data is 2026)
+  const today2026 = new Date(2026, now.getMonth(), now.getDate())
+  const month = Math.floor(dateNum / 100) - 1 // 0-based
+  const day = dateNum % 100
+  const matchDate = new Date(2026, month, day)
+  const diffMs = matchDate.getTime() - today2026.getTime()
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  return diffDays >= 0 && diffDays <= days
+}
+
+// ── Frozen predictions (for matches within 2 days) ────────
+const FROZEN_KEY = 'wc26-frozen-predictions'
+const FROZEN_TS_KEY = 'wc26-frozen-timestamp'
+
+function getFrozenPredictions(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(FROZEN_KEY) || '{}') } catch { return {} }
+}
+function setFrozenPredictions(preds: Record<string, string>) {
+  localStorage.setItem(FROZEN_KEY, JSON.stringify(preds))
+}
+function getFrozenTimestamp(): string {
+  return localStorage.getItem(FROZEN_TS_KEY) || ''
+}
+function setFrozenTimestamp() {
+  localStorage.setItem(FROZEN_TS_KEY, new Date().toLocaleString('zh-CN', { hour12: false }))
+}
+
 /** Convert local time (HH:MM) + UTC offset → Beijing time (UTC+8) */
 function localToBeijing(date: string, time: string, offset: number): { date: string; time: string } {
   const [h, m] = time.split(':').map(Number)
@@ -362,6 +392,8 @@ const allMatches = buildAllMatches()
 // ── Analysis notes for completed matches ──────────────────
 // 格式：{ matchId: '实际比分 vs 预测比分 | 原因分析' }
 const matchNotes: Record<string, string> = {
+  'g-E-0': '7-1 vs 预测5-0 | 德国全场26脚射门12射正，库拉索防线彻底崩溃；恩梅查6分钟闪击，施洛特贝克头槌，穆西亚拉造点，替补维尔茨和萨内各入一球。库拉索仅靠科梅嫩西亚一记世界波挽回颜面。模型低估了德国主场级别的火力(64.6%控球率)，高估了库拉索的防守韧性',
+  'g-F-0': '2-2 vs 预测1-1 | 荷兰德容17分钟补射首开纪录，加克波68分钟单刀扩大比分；日本72分钟南野拓实补射扳回一城，89分钟伊东纯也传中导致范戴克乌龙绝平。模型未能预见日本在0-2落后下的顽强反击韧性，也未充分考虑日本近两届世界杯对阵强队屡屡爆冷的传统',
   'g-A-0': '2-0 vs 预测2-1 | 南非两人染红九人应战，进攻完全瘫痪；墨西哥控场但进球效率偏低',
   'g-A-1': '2-1 vs 预测1-1 | 韩国下半场逆转，替补吴贤揆80分钟绝杀；捷克领先后过于保守丢好局',
   'g-B-0': '1-1 vs 预测2-1 | 加拿大历史首分！波黑先开纪录，拉林78分钟扳平；主场气势加分但效率不足',
@@ -508,6 +540,8 @@ const DEFAULT_PREDICTIONS: Record<string, string> = {
   'g-C-0': '2-1',   // Brazil 2-1 Morocco
   'g-C-1': '0-3',   // Haiti 0-3 Scotland
   'g-D-1': '1-2',   // Australia 1-2 Turkey
+  'g-E-0': '5-0',   // Germany 5-0 Curacao
+  'g-F-0': '1-1',   // Netherlands 1-1 Japan
 }
 
 // ── Component ──────────────────────────────────────────────
@@ -527,6 +561,8 @@ export function ScheduleView() {
         'g-C-0': '1-1',   // Brazil 1-1 Morocco
         'g-C-1': '0-1',   // Haiti 0-1 Scotland
         'g-D-1': '2-0',   // Australia 2-0 Turkey
+        'g-E-0': '7-1',   // Germany 7-1 Curacao
+        'g-F-0': '2-2',   // Netherlands 2-2 Japan
         ...JSON.parse(localStorage.getItem('wc26-scores') || '{}'),
       }
     } catch { return {
@@ -535,6 +571,8 @@ export function ScheduleView() {
       'g-B-1': '1-1', 'g-C-0': '1-1',
       'g-C-1': '0-1',
       'g-D-1': '2-0',
+      'g-E-0': '7-1',   // Germany 7-1 Curacao
+      'g-F-0': '2-2',   // Netherlands 2-2 Japan
     } }
   })
 
@@ -554,6 +592,37 @@ export function ScheduleView() {
   }, [])
 
   const teamMap = useMemo(() => new Map(teams.map(t => [t.id, t])), [])
+
+  // ── Frozen predictions for matches within 2 days ──────
+  const [frozenPreds, setFrozenPreds] = useState<Record<string, string>>(getFrozenPredictions)
+  const [frozenTs, setFrozenTs] = useState<string>(getFrozenTimestamp)
+
+  // On mount, freeze predictions for upcoming matches within 2 days
+  useEffect(() => {
+    const frozen = getFrozenPredictions()
+    let changed = false
+    for (const m of allMatches) {
+      if (!m.home || !m.away) continue
+      if (isMatchPast(m.dateNum)) continue // only future matches
+      if (!isMatchWithinDays(m.dateNum, 2)) continue // only within 2 days
+      if (frozen[m.id]) continue // already frozen
+
+      const home = teamMap.get(m.home)
+      const away = teamMap.get(m.away)
+      if (!home || !away) continue
+
+      // Compute & freeze
+      const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
+      frozen[m.id] = `${ph}-${pa}`
+      changed = true
+    }
+    if (changed) {
+      setFrozenPredictions(frozen)
+      setFrozenTimestamp()
+      setFrozenPreds(frozen)
+      setFrozenTs(getFrozenTimestamp())
+    }
+  }, [])
 
   // Detailed team stats for schedule display
   const teamStatsMap = useMemo(() => {
@@ -671,6 +740,8 @@ export function ScheduleView() {
                     const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
                     if (preds[m.id]) {
                       predicted = preds[m.id]
+                    } else if (frozenPreds[m.id]) {
+                      predicted = frozenPreds[m.id]
                     } else if (home && away) {
                       const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
                       predicted = `${ph}-${pa}`
@@ -687,7 +758,7 @@ export function ScheduleView() {
                     const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
                     cached = preds[m.id] || ''
                   } catch {}
-                  const predStr = DEFAULT_PREDICTIONS[m.id] || cached || ''
+                  const predStr = DEFAULT_PREDICTIONS[m.id] || frozenPreds[m.id] || cached || ''
                   let comparison: { icon: string; label: string; color: string } | null = null
                   if (predStr) {
                     const [aH, aA] = storedScore.split('-').map(Number)
@@ -835,6 +906,14 @@ export function ScheduleView() {
                           ) : null
                         })()}
                       </div>
+                    </div>
+
+                    {/* Status indicator — visible on both mobile and desktop */}
+                    <div className="text-[10px] font-medium text-center sm:text-right sm:flex-shrink-0 sm:max-w-[12rem]">
+                      {(past || storedScore || isMatchWithinDays(m.dateNum, 2))
+                        ? <span className="text-slate-500">最后更新 {frozenTs || '—'}</span>
+                        : <span className="text-slate-600">实时计算</span>
+                      }
                     </div>
 
                     {/* Venue + analysis */}
