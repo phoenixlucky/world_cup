@@ -771,6 +771,24 @@ export function ScheduleView() {
                       )}
                     </div>
                   )
+                } else if (home && away) {
+                  // 只有预测，无实际比分
+                  let predStr = DEFAULT_PREDICTIONS[m.id] || frozenPreds[m.id] || ''
+                  if (!predStr) {
+                    try {
+                      const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
+                      predStr = preds[m.id] || ''
+                    } catch {}
+                  }
+                  if (!predStr) {
+                    const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
+                    predStr = `${ph}-${pa}`
+                  }
+                  scoreContent = (
+                    <div className="flex flex-col items-center">
+                      <span className="text-orange-400 font-bold text-lg whitespace-nowrap">预测 {predStr}</span>
+                    </div>
+                  )
                 }
 
                 if (m.round === 'ceremony') {
