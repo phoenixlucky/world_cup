@@ -13,6 +13,7 @@ interface Match {
   id: string
   date: string
   dateNum: number
+  timeStr: string     // "HH:MM" local time
   home: string
   away: string
   round: string
@@ -22,6 +23,7 @@ interface Match {
 interface MatchAccuracy {
   matchId: string
   dateNum: number
+  timeStr: string
   homeName: string
   awayName: string
   actualScore: string       // "2-0"
@@ -146,11 +148,12 @@ const groupMatches: Record<string, RawMatch[]> = {
 function buildGroupMatches(): Match[] {
   const result: Match[] = []
   for (const [g, raw] of Object.entries(groupMatches)) {
-    raw.forEach(([date, _time, home, away], mi) => {
+    raw.forEach(([date, time, home, away], mi) => {
       result.push({
         id: `g-${g}-${mi}`,
         date,
         dateNum: parseDateNum(date),
+        timeStr: time,
         home,
         away,
         round: 'group',
@@ -259,6 +262,7 @@ export function computeAccuracy(): AccuracyStats {
     details.push({
       matchId: m.id,
       dateNum: m.dateNum,
+      timeStr: m.timeStr,
       homeName: homeTeam.nameCN || homeTeam.name,
       awayName: awayTeam.nameCN || awayTeam.name,
       actualScore,

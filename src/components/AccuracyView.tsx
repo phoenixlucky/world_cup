@@ -94,8 +94,8 @@ function OutcomeAccuracySection({ stats }: { stats: AccuracyStats }) {
         return (order[a.comparison.icon] ?? 0) - (order[b.comparison.icon] ?? 0)
       })
     } else {
-      // Sort by match time (dateNum then matchId for same-day)
-      list.sort((a, b) => a.dateNum - b.dateNum || a.matchId.localeCompare(b.matchId))
+      // Sort by match date, then by local kickoff time for same-day matches
+      list.sort((a, b) => a.dateNum - b.dateNum || a.timeStr.localeCompare(b.timeStr))
     }
     return list
   }, [stats, sortBy])
