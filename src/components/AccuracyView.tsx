@@ -195,6 +195,11 @@ function ScoreAccuracySection({ stats }: { stats: AccuracyStats }) {
     [stats]
   )
 
+  const sortedDetails = useMemo(
+    () => [...stats.matchDetails].sort((a, b) => a.dateNum - b.dateNum || a.timeStr.localeCompare(b.timeStr)),
+    [stats]
+  )
+
   if (stats.totalMatches === 0) return null
 
   return (
@@ -245,7 +250,7 @@ function ScoreAccuracySection({ stats }: { stats: AccuracyStats }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
-            {stats.matchDetails.map(d => {
+            {sortedDetails.map(d => {
               const [aH, aA] = d.actualScore.split('-').map(Number)
               const [pH, pA] = d.predictedScore.split('-').map(Number)
               const diffH = pH - aH
