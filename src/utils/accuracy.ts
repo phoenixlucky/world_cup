@@ -185,6 +185,8 @@ const DEFAULT_SCORES: Record<string, string> = {
   'g-D-1': '2-0',   // Australia 2-0 Turkey
   'g-E-0': '7-1',   // Germany 7-1 Curacao
   'g-F-0': '2-2',   // Netherlands 2-2 Japan
+  'g-E-1': '1-0',   // Ivory Coast 1-0 Ecuador
+  'g-F-1': '5-1',   // Sweden 5-1 Tunisia
 }
 
 /** Hardcoded old-model predictions for the default-score matches.
@@ -200,6 +202,8 @@ const DEFAULT_PREDICTIONS: Record<string, string> = {
   'g-D-1': '1-2',   // Australia 1-2 Turkey
   'g-E-0': '5-0',   // Germany 5-0 Curacao
   'g-F-0': '1-1',   // Netherlands 1-1 Japan
+  'g-E-1': '1-1',   // Ivory Coast 1-1 Ecuador
+  'g-F-1': '3-0',   // Sweden 3-0 Tunisia
 }
 
 export function computeAccuracy(): AccuracyStats {

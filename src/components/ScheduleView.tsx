@@ -563,6 +563,8 @@ export function ScheduleView() {
         'g-D-1': '2-0',   // Australia 2-0 Turkey
         'g-E-0': '7-1',   // Germany 7-1 Curacao
         'g-F-0': '2-2',   // Netherlands 2-2 Japan
+        'g-E-1': '1-0',   // Ivory Coast 1-0 Ecuador
+        'g-F-1': '5-1',   // Sweden 5-1 Tunisia
         ...JSON.parse(localStorage.getItem('wc26-scores') || '{}'),
       }
     } catch { return {
@@ -573,6 +575,8 @@ export function ScheduleView() {
       'g-D-1': '2-0',
       'g-E-0': '7-1',   // Germany 7-1 Curacao
       'g-F-0': '2-2',   // Netherlands 2-2 Japan
+      'g-E-1': '1-0',   // Ivory Coast 1-0 Ecuador
+      'g-F-1': '5-1',   // Sweden 5-1 Tunisia
     } }
   })
 
