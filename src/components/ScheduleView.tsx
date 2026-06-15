@@ -799,11 +799,6 @@ export function ScheduleView() {
                             }
                           }}
                         />
-                        <button className="text-sm text-blue-400 hover:text-blue-300 px-2 py-1.5"
-                          onClick={() => {
-                            const el = document.getElementById(`sc-${m.id}`) as HTMLInputElement
-                            if (el && /^\d-\d$/.test(el.value)) setScore(m.id, el.value)
-                          }}>确认</button>
                       </span>
                       <span className="text-orange-400 text-xs whitespace-nowrap">预测 {predStr}</span>
                     </div>
