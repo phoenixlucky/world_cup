@@ -576,14 +576,6 @@ export function ScheduleView() {
     } }
   })
 
-  const setScore = useCallback((matchId: string, score: string) => {
-    setLiveScores(prev => {
-      const next = { ...prev, [matchId]: score }
-      localStorage.setItem('wc26-scores', JSON.stringify(next))
-      return next
-    })
-  }, [])
-
   const teamScoreMap = useMemo(() => {
     const sc = computeScores(teams, DEFAULT_WEIGHTS)
     const map = new Map<string, number>()
@@ -783,24 +775,6 @@ export function ScheduleView() {
                       {comparison && comparison.label !== '预测准确' && (
                         <span className={`${comparison.color} text-[10px] font-medium whitespace-nowrap`}>{comparison.label}</span>
                       )}
-                    </div>
-                  )
-                } else if (past && home && away) {
-                  const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
-                  const predStr = `${ph}-${pa}`
-                  scoreContent = (
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="inline-flex items-center gap-2">
-                        <input id={`sc-${m.id}`} type="text" placeholder="?-?" maxLength={3}
-                          className="w-14 bg-slate-700 text-white text-center text-sm rounded px-1 py-1.5 border border-slate-600"
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' && /^\d-\d$/.test(e.currentTarget.value.trim())) {
-                              setScore(m.id, e.currentTarget.value.trim())
-                            }
-                          }}
-                        />
-                      </span>
-                      <span className="text-orange-400 text-xs whitespace-nowrap">预测 {predStr}</span>
                     </div>
                   )
                 } else if (!past && home && away) {
