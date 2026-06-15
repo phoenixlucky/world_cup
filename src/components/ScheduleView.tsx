@@ -710,34 +710,28 @@ export function ScheduleView() {
                 const storedScore = liveScores[m.id]
 
                 let scoreContent: ReactNode = null
-                let predicted: string | null = null
-
-                // Compute and store prediction for future matches
+                // Store prediction in localStorage for future reference
                 if (!past && home && away) {
                   const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
-                  predicted = `${ph}-${pa}`
-                  // Store prediction in localStorage
+                  const predStr = `${ph}-${pa}`
                   try {
                     const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
                     if (!preds[m.id]) {
-                      preds[m.id] = predicted
+                      preds[m.id] = predStr
                       localStorage.setItem('wc26-predicted', JSON.stringify(preds))
-                    } else {
-                      predicted = preds[m.id]
                     }
                   } catch {}
                 } else {
-                  // Look up previously stored prediction, or compute it now
+                  // Ensure prediction is stored in localStorage for Accuracy page
                   try {
                     const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
-                    if (preds[m.id]) {
-                      predicted = preds[m.id]
-                    } else if (frozenPreds[m.id]) {
-                      predicted = frozenPreds[m.id]
-                    } else if (home && away) {
-                      const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
-                      predicted = `${ph}-${pa}`
-                      preds[m.id] = predicted
+                    if (!preds[m.id] && home && away) {
+                      if (frozenPreds[m.id]) {
+                        preds[m.id] = frozenPreds[m.id]
+                      } else {
+                        const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
+                        preds[m.id] = `${ph}-${pa}`
+                      }
                       localStorage.setItem('wc26-predicted', JSON.stringify(preds))
                     }
                   } catch {}
@@ -777,10 +771,6 @@ export function ScheduleView() {
                       )}
                     </div>
                   )
-                } else if (!past && home && away) {
-                  const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
-                  const predStr = predicted || `${ph}-${pa}`
-                  scoreContent = <span className="text-orange-400 font-bold text-lg whitespace-nowrap">预测 {predStr}</span>
                 }
 
                 if (m.round === 'ceremony') {
