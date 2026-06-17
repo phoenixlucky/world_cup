@@ -562,6 +562,60 @@ const DEFAULT_PREDICTIONS: Record<string, string> = {
   'g-I-1': '0-3',   // Iraq 0-3 Norway
   'g-J-1': '4-0',   // Austria 4-0 Jordan (old model)
   'g-J-0': '3-0',   // Argentina 3-0 Algeria (old model)
+
+  // ── Future group matches (new model v2.0.1) ─────────────
+  'g-A-2': '2-1',   // Czech Republic vs South Africa
+  'g-A-3': '1-1',   // Mexico vs South Korea
+  'g-A-4': '1-1',   // Czech Republic vs Mexico
+  'g-A-5': '1-1',   // South Africa vs South Korea
+  'g-B-2': '1-1',   // Switzerland vs Bosnia
+  'g-B-3': '1-1',   // Canada vs Qatar
+  'g-B-4': '1-1',   // Switzerland vs Canada
+  'g-B-5': '1-1',   // Bosnia vs Qatar
+  'g-C-2': '1-1',   // Scotland vs Morocco
+  'g-C-3': '3-0',   // Brazil vs Haiti
+  'g-C-4': '1-1',   // Scotland vs Brazil
+  'g-C-5': '2-0',   // Morocco vs Haiti
+  'g-D-2': '1-1',   // USA vs Australia
+  'g-D-3': '1-1',   // Turkey vs Paraguay
+  'g-D-4': '1-1',   // Turkey vs USA
+  'g-D-5': '1-1',   // Paraguay vs Australia
+  'g-E-2': '2-1',   // Germany vs Ivory Coast
+  'g-E-3': '3-0',   // Ecuador vs Curacao
+  'g-E-4': '0-2',   // Curacao vs Ivory Coast
+  'g-E-5': '1-1',   // Ecuador vs Germany
+  'g-F-2': '1-1',   // Netherlands vs Sweden
+  'g-F-3': '1-1',   // Tunisia vs Japan
+  'g-F-4': '1-1',   // Japan vs Sweden
+  'g-F-5': '0-2',   // Tunisia vs Netherlands
+  'g-G-2': '1-1',   // Belgium vs Iran
+  'g-G-3': '1-1',   // New Zealand vs Egypt
+  'g-G-4': '1-1',   // Egypt vs Iran
+  'g-G-5': '0-2',   // New Zealand vs Belgium
+  'g-H-2': '2-0',   // Spain vs Saudi Arabia
+  'g-H-3': '2-0',   // Uruguay vs Cape Verde
+  'g-H-4': '1-1',   // Cape Verde vs Saudi Arabia
+  'g-H-5': '1-1',   // Uruguay vs Spain
+  'g-I-2': '2-0',   // France vs Iraq
+  'g-I-3': '1-1',   // Norway vs Senegal
+  'g-I-4': '1-1',   // Norway vs France
+  'g-I-5': '2-0',   // Senegal vs Iraq
+  'g-J-2': '1-1',   // Argentina vs Austria
+  'g-J-3': '1-1',   // Jordan vs Algeria
+  'g-J-4': '1-1',   // Algeria vs Austria
+  'g-J-5': '0-2',   // Jordan vs Argentina
+  'g-K-0': '2-0',   // Portugal vs DR Congo
+  'g-K-1': '0-2',   // Uzbekistan vs Colombia
+  'g-K-2': '2-0',   // Portugal vs Uzbekistan
+  'g-K-3': '2-0',   // Colombia vs DR Congo
+  'g-K-4': '1-1',   // Colombia vs Portugal
+  'g-K-5': '1-1',   // DR Congo vs Uzbekistan
+  'g-L-0': '1-1',   // England vs Croatia
+  'g-L-1': '1-1',   // Ghana vs Panama
+  'g-L-2': '2-0',   // England vs Ghana
+  'g-L-3': '1-1',   // Panama vs Croatia
+  'g-L-4': '0-2',   // Panama vs England
+  'g-L-5': '1-1',   // Croatia vs Ghana
 }
 
 // ── Component ──────────────────────────────────────────────
