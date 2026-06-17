@@ -110,7 +110,10 @@ export interface ScoreProbs {
 }
 
 /**
- * Predict the most likely score AND compute WDL / exact-score probabilities.
+ * Predict the most likely score by outcome-consistency:
+ * 1. Find the most likely outcome (home/draw/away)
+ * 2. Within that outcome, find the single most likely score
+ * AND compute WDL / exact-score probabilities.
  */
 export function predictScoreProbs(
   homeStrength: number,
@@ -118,9 +121,14 @@ export function predictScoreProbs(
 ): { score: [number, number]; probs: ScoreProbs } {
   const [hλ, aλ] = expectedLambdas(homeStrength, awayStrength)
 
-  let bestProb = -1
   let bestScore: [number, number] = [0, 0]
+  let bestProb = -1
   let homeWin = 0, draw = 0, awayWin = 0
+
+  // Track best score per outcome
+  let bestHomeProb = -1, bestHomeScore: [number, number] = [0, 0]
+  let bestDrawProb = -1, bestDrawScore: [number, number] = [0, 0]
+  let bestAwayProb = -1, bestAwayScore: [number, number] = [0, 0]
 
   for (let h = 0; h <= 6; h++) {
     for (let a = 0; a <= 6; a++) {
@@ -129,15 +137,35 @@ export function predictScoreProbs(
         bestProb = prob
         bestScore = [h, a]
       }
-      if (h > a) homeWin += prob
-      else if (h === a) draw += prob
-      else awayWin += prob
+      if (h > a) {
+        homeWin += prob
+        if (prob > bestHomeProb) { bestHomeProb = prob; bestHomeScore = [h, a] }
+      } else if (h === a) {
+        draw += prob
+        if (prob > bestDrawProb) { bestDrawProb = prob; bestDrawScore = [h, a] }
+      } else {
+        awayWin += prob
+        if (prob > bestAwayProb) { bestAwayProb = prob; bestAwayScore = [h, a] }
+      }
     }
   }
 
+  // Pick the most likely outcome, then use that outcome's best score
+  const outcome = homeWin >= draw && homeWin >= awayWin ? 'home'
+    : draw >= homeWin && draw >= awayWin ? 'draw'
+    : 'away'
+
+  const outcomeScore = outcome === 'home' ? bestHomeScore
+    : outcome === 'draw' ? bestDrawScore
+    : bestAwayScore
+
+  const outcomeScoreProb = outcome === 'home' ? bestHomeProb
+    : outcome === 'draw' ? bestDrawProb
+    : bestAwayProb
+
   return {
-    score: bestScore,
-    probs: { homeWin, draw, awayWin, scoreProb: bestProb },
+    score: outcomeScore,
+    probs: { homeWin, draw, awayWin, scoreProb: outcomeScoreProb },
   }
 }
 
