@@ -12,7 +12,7 @@
 import { useState, useMemo, useCallback, useEffect, type ReactNode } from 'react'
 import { teams, groupNames } from '../data/teams'
 import { computeScores, DEFAULT_WEIGHTS } from '../engine/scorer'
-import { predictMostLikelyScore } from '../engine/poisson'
+import { predictMostLikelyScore, predictScoreProbs } from '../engine/poisson'
 import { FlagImg } from './FlagImg'
 
 // ── Types ──────────────────────────────────────────────────
@@ -539,6 +539,14 @@ function predictScore(homeId: string, awayId: string, tm: Map<string, number>): 
   return predictMostLikelyScore(hs, as)
 }
 
+function predictScoreProbsW(
+  homeId: string, awayId: string, tm: Map<string, number>,
+): { score: [number, number]; probs: import('../engine/poisson').ScoreProbs } {
+  const hs = tm.get(homeId) || 50
+  const as = tm.get(awayId) || 50
+  return predictScoreProbs(hs, as)
+}
+
 /** Matches predicted with old model (v2.0.0) — before sqrt damping + weight adjustment */
 const OLD_MODEL_MATCHES = new Set([
   'g-A-0','g-A-1','g-B-0','g-B-1','g-C-0','g-C-1','g-D-0','g-D-1',
@@ -548,6 +556,11 @@ const OLD_MODEL_MATCHES = new Set([
 
 function modelTag(matchId: string): string {
   return OLD_MODEL_MATCHES.has(matchId) ? 'v2.0.0' : 'v2.0.1'
+}
+
+/** Format a probability 0-1 as a percentage string like "67.3" */
+function fmtPct(p: number): string {
+  return (p * 100).toFixed(1)
 }
 
 /** Hardcoded old-model predictions for the 8 default-score matches.
@@ -875,6 +888,15 @@ export function ScheduleView() {
                       {comparison && comparison.label !== '预测准确' && (
                         <span className={`${comparison.color} text-[10px] font-medium whitespace-nowrap`}>{comparison.label}</span>
                       )}
+                      {home && away && (() => {
+                        const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
+                        return (
+                          <span className="text-[9px] text-slate-600 font-mono mt-0.5">
+                            胜{fmtPct(sp.probs.homeWin)} 平{fmtPct(sp.probs.draw)} 负{fmtPct(sp.probs.awayWin)}
+                            <span className="ml-1.5 text-slate-700">比分{fmtPct(sp.probs.scoreProb)}</span>
+                          </span>
+                        )
+                      })()}
                     </div>
                   )
                 } else if (home && away) {
@@ -896,6 +918,15 @@ export function ScheduleView() {
                         预测 {predStr}
                         <span className="text-[9px] text-slate-600 font-mono ml-1">{modelTag(m.id)}</span>
                       </span>
+                      {home && away && (() => {
+                        const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
+                        return (
+                          <span className="text-[9px] text-slate-600 font-mono mt-0.5">
+                            胜{fmtPct(sp.probs.homeWin)} 平{fmtPct(sp.probs.draw)} 负{fmtPct(sp.probs.awayWin)}
+                            <span className="ml-1.5 text-slate-700">比分{fmtPct(sp.probs.scoreProb)}</span>
+                          </span>
+                        )
+                      })()}
                     </div>
                   )
                 }

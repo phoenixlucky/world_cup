@@ -102,6 +102,45 @@ export function predictMostLikelyScore(
   return bestScore
 }
 
+export interface ScoreProbs {
+  homeWin: number
+  draw: number
+  awayWin: number
+  scoreProb: number   // probability of the most likely score
+}
+
+/**
+ * Predict the most likely score AND compute WDL / exact-score probabilities.
+ */
+export function predictScoreProbs(
+  homeStrength: number,
+  awayStrength: number,
+): { score: [number, number]; probs: ScoreProbs } {
+  const [hλ, aλ] = expectedLambdas(homeStrength, awayStrength)
+
+  let bestProb = -1
+  let bestScore: [number, number] = [0, 0]
+  let homeWin = 0, draw = 0, awayWin = 0
+
+  for (let h = 0; h <= 6; h++) {
+    for (let a = 0; a <= 6; a++) {
+      const prob = poissonPMF(h, hλ) * poissonPMF(a, aλ)
+      if (prob > bestProb) {
+        bestProb = prob
+        bestScore = [h, a]
+      }
+      if (h > a) homeWin += prob
+      else if (h === a) draw += prob
+      else awayWin += prob
+    }
+  }
+
+  return {
+    score: bestScore,
+    probs: { homeWin, draw, awayWin, scoreProb: bestProb },
+  }
+}
+
 // ── Legacy predictor (preserved for already‑completed matches) ──
 // ── Helpers ────────────────────────────────────────────────
 
