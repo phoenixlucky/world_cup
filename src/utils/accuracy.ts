@@ -195,6 +195,8 @@ const DEFAULT_SCORES: Record<string, string> = {
   'g-H-0': '0-0',   // Spain 0-0 Cape Verde
   'g-H-1': '1-1',   // Saudi Arabia 1-1 Uruguay
   'g-G-1': '2-2',   // Iran 2-2 New Zealand
+  'g-I-0': '3-1',   // France 3-1 Senegal
+  'g-I-1': '1-3',   // Iraq 1-3 Norway
 }
 
 /** Hardcoded old-model predictions for the default-score matches.
@@ -216,6 +218,8 @@ const DEFAULT_PREDICTIONS: Record<string, string> = {
   'g-G-1': '3-0',   // Iran 3-0 New Zealand
   'g-H-0': '4-0',   // Spain 4-0 Cape Verde
   'g-H-1': '0-2',   // Saudi Arabia 0-2 Uruguay
+  'g-I-0': '2-0',   // France 2-0 Senegal
+  'g-I-1': '0-3',   // Iraq 0-3 Norway
 }
 
 export function computeAccuracy(): AccuracyStats {

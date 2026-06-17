@@ -408,6 +408,8 @@ export const matchNotes: Record<string, string> = {
   'g-G-1': '2-2 vs 预测3-0 | 新西兰伊利亚·贾斯特7分钟凌空斩加54分钟单刀梅开二度，伊朗雷扎扬和莫赫比分别头槌扳平。模型预测伊朗大胜，但未考虑新西兰的快速反击效率',
   'g-H-0': '0-0 vs 预测4-0 | 西班牙控球74.3%狂射27脚7射正却无法破门，佛得角铁桶阵拿到历史性平局。模型严重低估了佛得角的密集防守能力和西班牙的破密集难题',
   'g-H-1': '1-1 vs 预测0-2 | 沙特阿尔阿姆里41分钟角球破门，乌拉圭狂射27脚10射正，阿劳霍80分钟凌空抽射扳平。模型错判为乌拉圭轻松客胜，低估了沙特的主场气势和定位球威胁',
+  'g-I-0': '3-1 vs 预测2-0 | 姆巴佩66分钟首开纪录+90+6分钟锁定胜局，巴尔科拉82分钟扩大比分，塞内加尔90+5分钟头槌挽回颜面。模型方向正确但低估了法国的锋线火力和姆巴佩的巨星表现',
+  'g-I-1': '1-3 vs 预测0-3 | 哈兰德29分钟+43分钟梅开二度，伊拉克侯赛因39分钟头槌扳平，厄斯蒂高76分钟头球锁定胜局。模型方向正确但低估了伊拉克主场式拼劲和挪威定位球威胁',
 }
 
 // ── ESPN API sync ──────────────────────────────────────────
@@ -550,6 +552,12 @@ const DEFAULT_PREDICTIONS: Record<string, string> = {
   'g-F-0': '1-1',   // Netherlands 1-1 Japan
   'g-E-1': '1-1',   // Ivory Coast 1-1 Ecuador
   'g-F-1': '3-0',   // Sweden 3-0 Tunisia
+  'g-G-0': '2-0',   // Belgium 2-0 Egypt
+  'g-G-1': '3-0',   // Iran 3-0 New Zealand
+  'g-H-0': '4-0',   // Spain 4-0 Cape Verde
+  'g-H-1': '0-2',   // Saudi Arabia 0-2 Uruguay
+  'g-I-0': '2-0',   // France 2-0 Senegal
+  'g-I-1': '0-3',   // Iraq 0-3 Norway
 }
 
 // ── Component ──────────────────────────────────────────────
@@ -573,6 +581,12 @@ export function ScheduleView() {
         'g-F-0': '2-2',   // Netherlands 2-2 Japan
         'g-E-1': '1-0',   // Ivory Coast 1-0 Ecuador
         'g-F-1': '5-1',   // Sweden 5-1 Tunisia
+        'g-G-0': '1-1',   // Belgium 1-1 Egypt
+        'g-H-0': '0-0',   // Spain 0-0 Cape Verde
+        'g-H-1': '1-1',   // Saudi Arabia 1-1 Uruguay
+        'g-G-1': '2-2',   // Iran 2-2 New Zealand
+        'g-I-0': '3-1',   // France 3-1 Senegal
+        'g-I-1': '1-3',   // Iraq 1-3 Norway
         ...JSON.parse(localStorage.getItem('wc26-scores') || '{}'),
       }
     } catch { return {
@@ -585,6 +599,12 @@ export function ScheduleView() {
       'g-F-0': '2-2',   // Netherlands 2-2 Japan
       'g-E-1': '1-0',   // Ivory Coast 1-0 Ecuador
       'g-F-1': '5-1',   // Sweden 5-1 Tunisia
+      'g-G-0': '1-1',   // Belgium 1-1 Egypt
+      'g-H-0': '0-0',   // Spain 0-0 Cape Verde
+      'g-H-1': '1-1',   // Saudi Arabia 1-1 Uruguay
+      'g-G-1': '2-2',   // Iran 2-2 New Zealand
+      'g-I-0': '3-1',   // France 3-1 Senegal
+      'g-I-1': '1-3',   // Iraq 1-3 Norway
     } }
   })
 
