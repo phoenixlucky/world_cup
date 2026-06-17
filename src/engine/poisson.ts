@@ -48,7 +48,8 @@ export function expectedLambdas(
   homeStrength: number,
   awayStrength: number,
 ): [number, number] {
-  const ratio = homeStrength / Math.max(awayStrength, 1)
+  const rawRatio = homeStrength / Math.max(awayStrength, 1)
+  const ratio = Math.sqrt(rawRatio) // dampen extreme mismatches
 
   const baseRate = 1.35
   const homeAdv = 1.15

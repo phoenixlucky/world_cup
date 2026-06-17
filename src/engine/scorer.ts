@@ -27,9 +27,9 @@ export const DEFAULT_WEIGHTS: Weights = {
   goals: 7,
   wins: 14,
   form: 9,
-  luck: 5,
+  luck: 9,
   hostBonus: 5,
-  attackDefense: 18,
+  attackDefense: 14,
   opponentStrength: 10,
   worldCupPerf: 10,
 }
