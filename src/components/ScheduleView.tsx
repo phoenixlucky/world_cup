@@ -891,9 +891,9 @@ export function ScheduleView() {
                       {home && away && (() => {
                         const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
                         return (
-                          <span className="text-[9px] text-slate-600 font-mono mt-0.5">
+                          <span className="text-[10px] text-slate-400 font-mono mt-0.5">
                             胜{fmtPct(sp.probs.homeWin)} 平{fmtPct(sp.probs.draw)} 负{fmtPct(sp.probs.awayWin)}
-                            <span className="ml-1.5 text-slate-700">比分{fmtPct(sp.probs.scoreProb)}</span>
+                            <span className="ml-1.5 text-slate-500">比分{fmtPct(sp.probs.scoreProb)}</span>
                           </span>
                         )
                       })()}
@@ -921,9 +921,9 @@ export function ScheduleView() {
                       {home && away && (() => {
                         const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
                         return (
-                          <span className="text-[9px] text-slate-600 font-mono mt-0.5">
+                          <span className="text-[10px] text-slate-400 font-mono mt-0.5">
                             胜{fmtPct(sp.probs.homeWin)} 平{fmtPct(sp.probs.draw)} 负{fmtPct(sp.probs.awayWin)}
-                            <span className="ml-1.5 text-slate-700">比分{fmtPct(sp.probs.scoreProb)}</span>
+                            <span className="ml-1.5 text-slate-500">比分{fmtPct(sp.probs.scoreProb)}</span>
                           </span>
                         )
                       })()}
