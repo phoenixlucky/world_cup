@@ -539,6 +539,17 @@ function predictScore(homeId: string, awayId: string, tm: Map<string, number>): 
   return predictMostLikelyScore(hs, as)
 }
 
+/** Matches predicted with old model (v2.0.0) — before sqrt damping + weight adjustment */
+const OLD_MODEL_MATCHES = new Set([
+  'g-A-0','g-A-1','g-B-0','g-B-1','g-C-0','g-C-1','g-D-0','g-D-1',
+  'g-E-0','g-E-1','g-F-0','g-F-1','g-G-0','g-G-1','g-H-0','g-H-1',
+  'g-I-0','g-I-1','g-J-0','g-J-1',
+])
+
+function modelTag(matchId: string): string {
+  return OLD_MODEL_MATCHES.has(matchId) ? 'v2.0.0' : 'v2.0.1'
+}
+
 /** Hardcoded old-model predictions for the 8 default-score matches.
  *  Written in stone so algorithm updates don't affect completed matches. */
 const DEFAULT_PREDICTIONS: Record<string, string> = {
@@ -859,6 +870,7 @@ export function ScheduleView() {
                       {predStr && <span className="flex items-center gap-1 text-orange-400 text-xs font-medium whitespace-nowrap">
                         {comparison && <span className={comparison.color}>{comparison.icon}</span>}
                         预测 {predStr}
+                        <span className="text-[9px] text-slate-600 font-mono ml-0.5">{modelTag(m.id)}</span>
                       </span>}
                       {comparison && comparison.label !== '预测准确' && (
                         <span className={`${comparison.color} text-[10px] font-medium whitespace-nowrap`}>{comparison.label}</span>
@@ -880,7 +892,10 @@ export function ScheduleView() {
                   }
                   scoreContent = (
                     <div className="flex flex-col items-center">
-                      <span className="text-orange-400 font-bold text-lg whitespace-nowrap">预测 {predStr}</span>
+                      <span className="text-orange-400 font-bold text-lg whitespace-nowrap">
+                        预测 {predStr}
+                        <span className="text-[9px] text-slate-600 font-mono ml-1">{modelTag(m.id)}</span>
+                      </span>
                     </div>
                   )
                 }
