@@ -196,8 +196,9 @@ const DEFAULT_SCORES: Record<string, string> = {
   'g-H-1': '1-1',   // Saudi Arabia 1-1 Uruguay
   'g-G-1': '2-2',   // Iran 2-2 New Zealand
   'g-I-0': '3-1',   // France 3-1 Senegal
-  'g-I-1': '1-3',   // Iraq 1-3 Norway
+  'g-I-1': '1-4',   // Iraq 1-4 Norway (updated)
   'g-J-1': '3-1',   // Austria 3-1 Jordan
+  'g-J-0': '3-0',   // Argentina 3-0 Algeria
 }
 
 /** Hardcoded old-model predictions for the default-score matches.
@@ -222,6 +223,7 @@ const DEFAULT_PREDICTIONS: Record<string, string> = {
   'g-I-0': '2-0',   // France 2-0 Senegal
   'g-I-1': '0-3',   // Iraq 0-3 Norway
   'g-J-1': '2-0',   // Austria 2-0 Jordan
+  'g-J-0': '2-0',   // Argentina 2-0 Algeria
 }
 
 export function computeAccuracy(): AccuracyStats {
