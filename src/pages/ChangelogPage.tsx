@@ -21,6 +21,99 @@ interface Section {
 
 const changelog: ChangeEntry[] = [
   {
+    version: 'v2.0.1',
+    date: '2025-06-15',
+    title: '📉 权重调优 + 泊松比率阻尼 — 抑制极端预测',
+    sections: [
+      {
+        heading: '🎯 调整动机',
+        body: `
+          <p class="mb-2">世界杯开赛后 20 场比赛中，模型在强弱分明的比赛（如西班牙 vs 佛得角、伊朗 vs 新西兰）中
+          预测了 4-0、3-0 等极端比分，但实际结果为 0-0、2-2 等平局。问题出在两个方面：</p>
+          <ol class="list-decimal list-inside space-y-1 text-sm mb-3">
+            <li><strong>攻防权重过高</strong>（attackDefense=18）—— 强队的净胜球数据被过度放大</li>
+            <li><strong>泊松比率线性放大</strong> —— 评分差距 5 倍 → 预期进球差 5 倍，远超足球现实</li>
+          </ol>
+        `,
+      },
+      {
+        heading: '⚖️ 权重调整（scorer.ts）',
+        body: `
+          <table class="w-full text-sm mb-4">
+            <thead>
+              <tr class="border-b border-slate-600">
+                <th class="text-left py-1 pr-4">维度</th>
+                <th class="text-right py-1 pr-4">调整前</th>
+                <th class="text-right py-1 pl-4">调整后</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-slate-700">
+                <td class="py-1 pr-4 text-blue-300">attackDefense（攻防能力）</td>
+                <td class="text-right py-1 pr-4 font-mono text-red-400">18</td>
+                <td class="text-right py-1 pl-4 font-mono text-green-400">14</td>
+              </tr>
+              <tr class="border-b border-slate-700">
+                <td class="py-1 pr-4 text-yellow-300">luck（随机/运气）</td>
+                <td class="text-right py-1 pr-4 font-mono text-red-400">5</td>
+                <td class="text-right py-1 pl-4 font-mono text-green-400">9</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>总权重保持 101 不变。降低攻防权重可缩小强弱队评分差距，增加运气权重可提高冷门概率。</p>
+        `,
+      },
+      {
+        heading: '🔄 泊松比率阻尼（poisson.ts）',
+        body: `
+          <p class="mb-2">核心改动：对预期进球计算中的强弱比率添加 <strong>平方根阻尼</strong>。</p>
+          <pre class="bg-slate-800 text-green-300 text-sm p-3 rounded mb-3 overflow-x-auto">
+    改前：ratio = 主队评分 / 客队评分          ← 线性放大
+    改后：ratio = √(主队评分 / 客队评分)        ← sqrt 阻尼</pre>
+          <p class="mb-2">效果对比（西班牙 84 分 vs 佛得角 28 分）：</p>
+          <table class="w-full text-sm mb-3">
+            <thead>
+              <tr class="border-b border-slate-600">
+                <th class="text-left py-1 pr-4"></th>
+                <th class="text-right py-1 pr-4">旧模型</th>
+                <th class="text-right py-1 pl-4">新模型</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-slate-700">
+                <td class="py-1 pr-4">比率</td>
+                <td class="text-right py-1 pr-4 font-mono">3.0</td>
+                <td class="text-right py-1 pl-4 font-mono text-green-400">1.73</td>
+              </tr>
+              <tr class="border-b border-slate-700">
+                <td class="py-1 pr-4">主队预期进球 λ</td>
+                <td class="text-right py-1 pr-4 font-mono text-red-400">4.66</td>
+                <td class="text-right py-1 pl-4 font-mono text-green-400">2.69</td>
+              </tr>
+              <tr>
+                <td class="py-1 pr-4">客队预期进球 λ</td>
+                <td class="text-right py-1 pr-4 font-mono text-red-400">0.45</td>
+                <td class="text-right py-1 pl-4 font-mono text-green-400">0.78</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>强队仍占优，但不会出现 6-0、5-0 等脱离现实的预测。旗鼓相当的比赛（比率 ≈ 1）不受影响。所有已赛比赛的预测已封存在 <code>DEFAULT_PREDICTIONS</code>，不会被改写。</p>
+        `,
+      },
+      {
+        heading: '📊 影响范围',
+        body: `
+          <ul class="list-disc list-inside space-y-1 text-sm">
+            <li><strong>赛程页面</strong>未来比赛的预测比分 —— 极端比分减少，更接近真实分布</li>
+            <li><strong>小组/淘汰赛预测</strong> —— 10,000 次 Monte Carlo 模拟的比分生成</li>
+            <li><strong>夺冠概率</strong> —— 强弱队的胜率差距缩小，冷门概率上升</li>
+            <li class="text-slate-500">已赛比赛的预测不变（已封存）</li>
+          </ul>
+        `,
+      },
+    ],
+  },
+  {
     version: 'v2.0.0',
     date: '2025-06-14',
     title: '🎯 泊松分布模型 — 更真实的比赛模拟',
