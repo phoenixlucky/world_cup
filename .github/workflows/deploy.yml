@@ -36,6 +36,9 @@ jobs:
 
       - run: npm run build
 
+      - name: Create 404.html for SPA routing
+        run: cp dist/index.html dist/404.html
+
       - uses: actions/configure-pages@v4
         with:
           static_site_generator: vite
