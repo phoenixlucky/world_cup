@@ -541,7 +541,7 @@ function predictScore(homeId: string, awayId: string, tm: Map<string, number>): 
 
 function predictScoreProbsW(
   homeId: string, awayId: string, tm: Map<string, number>,
-): { score: [number, number]; probs: import('../engine/poisson').ScoreProbs } {
+): { score: [number, number]; probs: import('../engine/poisson').ScoreProbs; bestOverallScore: [number, number] } {
   const hs = tm.get(homeId) || 50
   const as = tm.get(awayId) || 50
   return predictScoreProbs(hs, as)
@@ -845,6 +845,12 @@ export function ScheduleView() {
                       {predStr && <span className="flex items-center gap-1 text-orange-400 text-xs font-medium whitespace-nowrap">
                         {comparison && <span className={comparison.color}>{comparison.icon}</span>}
                         预测 {predStr}
+                        {home && away && (() => {
+                          const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
+                          return sp.bestOverallScore[0] !== sp.score[0] || sp.bestOverallScore[1] !== sp.score[1]
+                            ? <span className="text-slate-500">({sp.bestOverallScore[0]}-{sp.bestOverallScore[1]})</span>
+                            : null
+                        })()}
                         <span className="text-[9px] text-slate-600 font-mono ml-0.5">{modelTag(m.id)}</span>
                       </span>}
                       {comparison && comparison.label !== '预测准确' && (
@@ -878,6 +884,12 @@ export function ScheduleView() {
                     <div className="flex flex-col items-center">
                       <span className="text-orange-400 font-bold text-lg whitespace-nowrap">
                         预测 {predStr}
+                        {home && away && (() => {
+                          const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
+                          return sp.bestOverallScore[0] !== sp.score[0] || sp.bestOverallScore[1] !== sp.score[1]
+                            ? <span className="text-slate-500 text-sm font-normal">({sp.bestOverallScore[0]}-{sp.bestOverallScore[1]})</span>
+                            : null
+                        })()}
                         <span className="text-[9px] text-slate-600 font-mono ml-1">{modelTag(m.id)}</span>
                       </span>
                       {home && away && (() => {

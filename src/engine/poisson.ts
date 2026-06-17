@@ -118,14 +118,15 @@ export interface ScoreProbs {
 export function predictScoreProbs(
   homeStrength: number,
   awayStrength: number,
-): { score: [number, number]; probs: ScoreProbs } {
+): { score: [number, number]; probs: ScoreProbs; bestOverallScore: [number, number] } {
   const [hλ, aλ] = expectedLambdas(homeStrength, awayStrength)
 
   let bestScore: [number, number] = [0, 0]
   let bestProb = -1
+  let bestOverallScore: [number, number] = [0, 0]
+  let bestOverallProb = -1
   let homeWin = 0, draw = 0, awayWin = 0
 
-  // Track best score per outcome
   let bestHomeProb = -1, bestHomeScore: [number, number] = [0, 0]
   let bestDrawProb = -1, bestDrawScore: [number, number] = [0, 0]
   let bestAwayProb = -1, bestAwayScore: [number, number] = [0, 0]
@@ -136,6 +137,10 @@ export function predictScoreProbs(
       if (prob > bestProb) {
         bestProb = prob
         bestScore = [h, a]
+      }
+      if (prob > bestOverallProb) {
+        bestOverallProb = prob
+        bestOverallScore = [h, a]
       }
       if (h > a) {
         homeWin += prob
@@ -150,7 +155,6 @@ export function predictScoreProbs(
     }
   }
 
-  // Pick the most likely outcome, then use that outcome's best score
   const outcome = homeWin >= draw && homeWin >= awayWin ? 'home'
     : draw >= homeWin && draw >= awayWin ? 'draw'
     : 'away'
@@ -166,6 +170,7 @@ export function predictScoreProbs(
   return {
     score: outcomeScore,
     probs: { homeWin, draw, awayWin, scoreProb: outcomeScoreProb },
+    bestOverallScore,
   }
 }
 
