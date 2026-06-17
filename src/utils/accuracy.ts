@@ -222,8 +222,8 @@ const DEFAULT_PREDICTIONS: Record<string, string> = {
   'g-H-1': '0-2',   // Saudi Arabia 0-2 Uruguay
   'g-I-0': '2-0',   // France 2-0 Senegal
   'g-I-1': '0-3',   // Iraq 0-3 Norway
-  'g-J-1': '2-0',   // Austria 2-0 Jordan
-  'g-J-0': '2-0',   // Argentina 2-0 Algeria
+  'g-J-1': '4-0',   // Austria 4-0 Jordan (old model)
+  'g-J-0': '3-0',   // Argentina 3-0 Algeria (old model)
 }
 
 export function computeAccuracy(): AccuracyStats {
