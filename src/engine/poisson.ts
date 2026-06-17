@@ -121,8 +121,6 @@ export function predictScoreProbs(
 ): { score: [number, number]; probs: ScoreProbs; bestOverallScore: [number, number] } {
   const [hλ, aλ] = expectedLambdas(homeStrength, awayStrength)
 
-  let bestScore: [number, number] = [0, 0]
-  let bestProb = -1
   let bestOverallScore: [number, number] = [0, 0]
   let bestOverallProb = -1
   let homeWin = 0, draw = 0, awayWin = 0
@@ -134,10 +132,6 @@ export function predictScoreProbs(
   for (let h = 0; h <= 6; h++) {
     for (let a = 0; a <= 6; a++) {
       const prob = poissonPMF(h, hλ) * poissonPMF(a, aλ)
-      if (prob > bestProb) {
-        bestProb = prob
-        bestScore = [h, a]
-      }
       if (prob > bestOverallProb) {
         bestOverallProb = prob
         bestOverallScore = [h, a]
