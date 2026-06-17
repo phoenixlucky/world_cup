@@ -848,7 +848,7 @@ export function ScheduleView() {
                         {home && away && (() => {
                           const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
                           return sp.bestOverallScore[0] !== sp.score[0] || sp.bestOverallScore[1] !== sp.score[1]
-                            ? <span className="text-slate-500">({sp.bestOverallScore[0]}-{sp.bestOverallScore[1]})</span>
+                            ? <span className="text-orange-400">({sp.bestOverallScore[0]}-{sp.bestOverallScore[1]})</span>
                             : null
                         })()}
                         <span className="text-[9px] text-slate-600 font-mono ml-0.5">{modelTag(m.id)}</span>
@@ -887,7 +887,7 @@ export function ScheduleView() {
                         {home && away && (() => {
                           const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
                           return sp.bestOverallScore[0] !== sp.score[0] || sp.bestOverallScore[1] !== sp.score[1]
-                            ? <span className="text-slate-500 text-sm font-normal">({sp.bestOverallScore[0]}-{sp.bestOverallScore[1]})</span>
+                            ? <span className="text-orange-400 text-sm font-normal">({sp.bestOverallScore[0]}-{sp.bestOverallScore[1]})</span>
                             : null
                         })()}
                         <span className="text-[9px] text-slate-600 font-mono ml-1">{modelTag(m.id)}</span>
