@@ -477,8 +477,11 @@ function SyncButton({ setLiveScores }: { setLiveScores: React.Dispatch<React.Set
       const scores = await fetchAllEspnScores()
       const count = Object.keys(scores).length
       if (count > 0) {
-        setLiveScores(prev => ({ ...prev, ...scores }))
-        localStorage.setItem('wc26-scores', JSON.stringify({ ...scores }))
+        setLiveScores(prev => {
+          const merged = { ...prev, ...scores }
+          localStorage.setItem('wc26-scores', JSON.stringify(merged))
+          return merged
+        })
         setMsg(`✅ 已同步 ${count} 场比分`)
       } else {
         setMsg('⚠️ 暂无新的已完赛比分')
