@@ -13,6 +13,7 @@ import { useState, useMemo, useCallback, useEffect, type ReactNode } from 'react
 import { teams, groupNames } from '../data/teams'
 import { computeScores, DEFAULT_WEIGHTS } from '../engine/scorer'
 import { predictMostLikelyScore, predictScoreProbs } from '../engine/poisson'
+import { LIVE_SCORES, FROZEN_PREDICTIONS, MATCH_NOTES, modelTag } from '../data/results'
 import { FlagImg } from './FlagImg'
 
 // ── Types ──────────────────────────────────────────────────
@@ -390,30 +391,6 @@ function buildAllMatches(): Match[] {
 const allMatches = buildAllMatches()
 
 // ── Analysis notes for completed matches ──────────────────
-// 格式：{ matchId: '实际比分 vs 预测比分 | 原因分析' }
-export const matchNotes: Record<string, string> = {
-  'g-E-0': '7-1 vs 预测5-0 | 德国全场26脚射门12射正，库拉索防线彻底崩溃；恩梅查6分钟闪击，施洛特贝克头槌，穆西亚拉造点，替补维尔茨和萨内各入一球。库拉索仅靠科梅嫩西亚一记世界波挽回颜面。模型低估了德国主场级别的火力(64.6%控球率)，高估了库拉索的防守韧性',
-  'g-F-0': '2-2 vs 预测1-1 | 荷兰德容17分钟补射首开纪录，加克波68分钟单刀扩大比分；日本72分钟南野拓实补射扳回一城，89分钟伊东纯也传中导致范戴克乌龙绝平。模型未能预见日本在0-2落后下的顽强反击韧性，也未充分考虑日本近两届世界杯对阵强队屡屡爆冷的传统',
-  'g-E-1': '1-0 vs 预测1-1 | 象牙海岸阿马德·迪亚洛90分钟绝杀；厄瓜多尔场面上不落下风(51.6%控球率12次射门)但最后一击乏力。模型错判为平局，低估了象牙海岸的主场级韧性，也高估了厄瓜多尔的攻坚火力',
-  'g-F-1': '5-1 vs 预测3-0 | 瑞典阿亚里7分钟凌空斩首开纪录，伊萨克和哲凯赖什各建一功，突尼斯雷基克头槌扳回一城，下半场瑞典再入两球。模型预测瑞典取胜但低估了北欧海盗的主场级攻击力',
-  'g-A-0': '2-0 vs 预测2-1 | 南非两人染红九人应战，进攻完全瘫痪；墨西哥控场但进球效率偏低',
-  'g-A-1': '2-1 vs 预测1-1 | 韩国下半场逆转，替补吴贤揆80分钟绝杀；捷克领先后过于保守丢好局',
-  'g-B-0': '1-1 vs 预测2-1 | 加拿大历史首分！波黑先开纪录，拉林78分钟扳平；主场气势加分但效率不足',
-  'g-D-0': '4-1 vs 预测2-1 | 巴洛贡梅开二度创美国历史(96年来首次单场2+球)，巴拉圭防线全面崩溃',
-  'g-B-1': '1-1 vs 预测1-3 | 恩博洛17分钟点球首开纪录；瑞士89分钟乌龙送礼（穆海姆），卡塔尔补时绝平拿历史首分',
-  'g-C-0': '1-1 vs 预测2-1 | 摩洛哥赛巴里21分钟先拔头筹；维尼修斯32分钟凌空斩扳平，巴西狂攻未果',
-  'g-C-1': '0-1 vs 预测0-3 | 海地密集防守顽强抵抗85分钟，麦金角球头槌绝杀；全场苏格兰控球72%却破门乏术',
-  'g-D-1': '2-0 vs 预测1-2 | 伊兰昆达27分钟凌空抽射首秀破门，梅特卡夫75分钟单刀锁定胜局；土耳其控球72%狂射30脚无一命中',
-  'g-G-0': '1-1 vs 预测2-0 | 埃及艾马姆·阿舒尔20分钟首开纪录，比利时66分钟依靠对手乌龙扳平。比利时控球53.6%但射门效率低下，模型错判为比利时轻松取胜，低估了埃及的防守韧性',
-  'g-G-1': '2-2 vs 预测3-0 | 新西兰伊利亚·贾斯特7分钟凌空斩加54分钟单刀梅开二度，伊朗雷扎扬和莫赫比分别头槌扳平。模型预测伊朗大胜，但未考虑新西兰的快速反击效率',
-  'g-H-0': '0-0 vs 预测4-0 | 西班牙控球74.3%狂射27脚7射正却无法破门，佛得角铁桶阵拿到历史性平局。模型严重低估了佛得角的密集防守能力和西班牙的破密集难题',
-  'g-H-1': '1-1 vs 预测0-2 | 沙特阿尔阿姆里41分钟角球破门，乌拉圭狂射27脚10射正，阿劳霍80分钟凌空抽射扳平。模型错判为乌拉圭轻松客胜，低估了沙特的主场气势和定位球威胁',
-  'g-I-0': '3-1 vs 预测2-0 | 姆巴佩66分钟首开纪录+90+6分钟锁定胜局，巴尔科拉82分钟扩大比分，塞内加尔90+5分钟头槌挽回颜面。模型方向正确但低估了法国的锋线火力和姆巴佩的巨星表现',
-  'g-I-1': '1-4 vs 预测0-3 | 哈兰德29分钟+43分钟梅开二度，伊拉克侯赛因39分钟头槌扳平，厄斯蒂高76分钟头球+伊拉克90+6分钟乌龙锁定胜局。模型方向正确但低估了挪威的定位球威胁和伊拉克的防守失误',
-  'g-J-1': '3-1 vs 预测4-0 | 奥地利施密德21分钟首开纪录+对手乌龙76分钟+阿瑙托维奇90+12分钟点球；约旦奥勒万50分钟扳平顽强抵抗70分钟。模型方向正确(主胜)但高估了奥地利进攻效率，约旦表现比预期顽强',
-  'g-J-0': '3-0 vs 预测3-0 | 梅西17分钟+60分钟+76分钟帽子戏法追平克洛泽世界杯16球纪录，阿尔及利亚全场仅1射正。模型完全准确！✅',
-}
-
 // ── ESPN API sync ──────────────────────────────────────────
 
 /** ESPN 3-letter abbreviation → our team id */
@@ -547,62 +524,11 @@ function predictScoreProbsW(
   return predictScoreProbs(hs, as)
 }
 
-/** Matches predicted with old model (v2.0.0) — before sqrt damping + weight adjustment */
-const OLD_MODEL_MATCHES = new Set([
-  'g-A-0','g-A-1','g-B-0','g-B-1','g-C-0','g-C-1','g-D-0','g-D-1',
-  'g-E-0','g-E-1','g-F-0','g-F-1','g-G-0','g-G-1','g-H-0','g-H-1',
-  'g-I-0','g-I-1','g-J-0','g-J-1',
-])
-
-function modelTag(matchId: string): string {
-  return OLD_MODEL_MATCHES.has(matchId) ? 'v2.0.0' : 'v2.0.1'
-}
-
 /** Format a probability 0-1 as a percentage string like "67.3" */
 function fmtPct(p: number): string {
   return (p * 100).toFixed(1)
 }
 
-/** Hardcoded old-model predictions for the 8 default-score matches.
- *  Written in stone so algorithm updates don't affect completed matches. */
-const DEFAULT_PREDICTIONS: Record<string, string> = {
-  'g-A-0': '2-1',   // Mexico 2-1 South Africa
-  'g-A-1': '1-1',   // South Korea 1-1 Czech Republic
-  'g-B-0': '2-1',   // Canada 2-1 Bosnia
-  'g-D-0': '2-1',   // USA 2-1 Paraguay
-  'g-B-1': '1-3',   // Qatar 1-3 Switzerland
-  'g-C-0': '2-1',   // Brazil 2-1 Morocco
-  'g-C-1': '0-3',   // Haiti 0-3 Scotland
-  'g-D-1': '1-2',   // Australia 1-2 Turkey
-  'g-E-0': '5-0',   // Germany 5-0 Curacao
-  'g-F-0': '1-1',   // Netherlands 1-1 Japan
-  'g-E-1': '1-1',   // Ivory Coast 1-1 Ecuador
-  'g-F-1': '3-0',   // Sweden 3-0 Tunisia
-  'g-G-0': '2-0',   // Belgium 2-0 Egypt
-  'g-G-1': '3-0',   // Iran 3-0 New Zealand
-  'g-H-0': '4-0',   // Spain 4-0 Cape Verde
-  'g-H-1': '0-2',   // Saudi Arabia 0-2 Uruguay
-  'g-I-0': '2-0',   // France 2-0 Senegal
-  'g-I-1': '0-3',   // Iraq 0-3 Norway
-  'g-J-1': '4-0',   // Austria 4-0 Jordan (old model)
-  'g-J-0': '3-0',   // Argentina 3-0 Algeria (old model)
-
-  // ── Future group matches (new model v2.0.1) ─────────────
-  'g-A-2':'2-1',  'g-A-3':'2-1',  'g-A-4':'2-1',  'g-A-5':'1-2',
-  'g-B-2':'2-1',  'g-B-3':'2-1',  'g-B-4':'2-1',  'g-B-5':'2-1',
-  'g-C-2':'1-2',  'g-C-3':'3-0',  'g-C-4':'1-2',  'g-C-5':'2-0',
-  'g-D-2':'2-1',  'g-D-3':'2-1',  'g-D-4':'2-1',  'g-D-5':'2-1',
-  'g-E-2':'2-1',  'g-E-3':'3-0',  'g-E-4':'0-2',  'g-E-5':'1-2',
-  'g-F-2':'2-1',  'g-F-3':'1-2',  'g-F-4':'2-1',  'g-F-5':'0-2',
-  'g-G-2':'2-1',  'g-G-3':'1-2',  'g-G-4':'2-1',  'g-G-5':'0-2',
-  'g-H-2':'2-0',  'g-H-3':'2-0',  'g-H-4':'2-1',  'g-H-5':'1-2',
-  'g-I-2':'2-0',  'g-I-3':'2-1',  'g-I-4':'1-2',  'g-I-5':'2-0',
-  'g-J-2':'2-1',  'g-J-3':'1-2',  'g-J-4':'1-2',  'g-J-5':'0-2',
-  'g-K-0':'2-0',  'g-K-1':'0-2',  'g-K-2':'2-0',  'g-K-3':'2-0',
-  'g-K-4':'1-2',  'g-K-5':'2-1',
-  'g-L-0':'2-1',  'g-L-1':'2-1',  'g-L-2':'2-0',  'g-L-3':'1-2',
-  'g-L-4':'2-0',  'g-L-5':'2-1',
-}
 
 // ── Component ──────────────────────────────────────────────
 export function ScheduleView() {
@@ -612,48 +538,11 @@ export function ScheduleView() {
 
   const [liveScores, setLiveScores] = useState<Record<string, string>>(() => {
     try {
-      return {
-        'g-A-0': '2-0',   // Mexico 2-0 South Africa  ✅
-        'g-A-1': '2-1',   // South Korea 2-1 Czech Republic  ✅
-        'g-B-0': '1-1',   // Canada 1-1 Bosnia (Canada历史首分)
-        'g-D-0': '4-1',   // USA 4-1 Paraguay (Balogun梅开二度)
-        'g-B-1': '1-1',   // Qatar 1-1 Switzerland
-        'g-C-0': '1-1',   // Brazil 1-1 Morocco
-        'g-C-1': '0-1',   // Haiti 0-1 Scotland
-        'g-D-1': '2-0',   // Australia 2-0 Turkey
-        'g-E-0': '7-1',   // Germany 7-1 Curacao
-        'g-F-0': '2-2',   // Netherlands 2-2 Japan
-        'g-E-1': '1-0',   // Ivory Coast 1-0 Ecuador
-        'g-F-1': '5-1',   // Sweden 5-1 Tunisia
-        'g-G-0': '1-1',   // Belgium 1-1 Egypt
-        'g-H-0': '0-0',   // Spain 0-0 Cape Verde
-        'g-H-1': '1-1',   // Saudi Arabia 1-1 Uruguay
-        'g-G-1': '2-2',   // Iran 2-2 New Zealand
-        'g-I-0': '3-1',   // France 3-1 Senegal
-        'g-I-1': '1-4',   // Iraq 1-4 Norway (updated)
-        'g-J-1': '3-1',   // Austria 3-1 Jordan
-        'g-J-0': '3-0',   // Argentina 3-0 Algeria
-        ...JSON.parse(localStorage.getItem('wc26-scores') || '{}'),
-      }
-    } catch { return {
-      'g-A-0': '2-0', 'g-A-1': '2-1',
-      'g-B-0': '1-1', 'g-D-0': '4-1',
-      'g-B-1': '1-1', 'g-C-0': '1-1',
-      'g-C-1': '0-1',
-      'g-D-1': '2-0',
-      'g-E-0': '7-1',   // Germany 7-1 Curacao
-      'g-F-0': '2-2',   // Netherlands 2-2 Japan
-      'g-E-1': '1-0',   // Ivory Coast 1-0 Ecuador
-      'g-F-1': '5-1',   // Sweden 5-1 Tunisia
-      'g-G-0': '1-1',   // Belgium 1-1 Egypt
-      'g-H-0': '0-0',   // Spain 0-0 Cape Verde
-      'g-H-1': '1-1',   // Saudi Arabia 1-1 Uruguay
-      'g-G-1': '2-2',   // Iran 2-2 New Zealand
-      'g-I-0': '3-1',   // France 3-1 Senegal
-      'g-I-1': '1-4',   // Iraq 1-4 Norway (updated)
-      'g-J-1': '3-1',   // Austria 3-1 Jordan
-      'g-J-0': '3-0',   // Argentina 3-0 Algeria
-    } }
+      const stored = JSON.parse(localStorage.getItem('wc26-scores') || '{}')
+      return { ...LIVE_SCORES, ...stored }
+    } catch {
+      return { ...LIVE_SCORES }
+    }
   })
 
   const teamScoreMap = useMemo(() => {
@@ -824,7 +713,7 @@ export function ScheduleView() {
                     const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
                     cached = preds[m.id] || ''
                   } catch {}
-                  const predStr = DEFAULT_PREDICTIONS[m.id] || frozenPreds[m.id] || cached || ''
+                  const predStr = FROZEN_PREDICTIONS[m.id] || frozenPreds[m.id] || cached || ''
                   let comparison: { icon: string; label: string; color: string } | null = null
                   if (predStr) {
                     const [aH, aA] = storedScore.split('-').map(Number)
@@ -869,7 +758,7 @@ export function ScheduleView() {
                   )
                 } else if (home && away) {
                   // 只有预测，无实际比分
-                  let predStr = DEFAULT_PREDICTIONS[m.id] || frozenPreds[m.id] || ''
+                  let predStr = FROZEN_PREDICTIONS[m.id] || frozenPreds[m.id] || ''
                   if (!predStr) {
                     try {
                       const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
@@ -1010,11 +899,11 @@ export function ScheduleView() {
                     {/* Venue + analysis */}
                     <div className="text-slate-400 text-sm flex-shrink-0 text-right leading-snug hidden sm:block max-w-[12rem]">
                       {m.venue}<br /><span className="text-slate-500">{m.city}</span>
-                      {matchNotes[m.id] && (() => {
+                      {MATCH_NOTES[m.id] && (() => {
                         // Split "比分 vs 预测比分 | 分析原因"
-                        const sep = matchNotes[m.id].indexOf(' | ')
-                        const scoreComp = sep > 0 ? matchNotes[m.id].slice(0, sep) : ''
-                        const reason = sep > 0 ? matchNotes[m.id].slice(sep + 3) : matchNotes[m.id]
+                        const sep = MATCH_NOTES[m.id].indexOf(' | ')
+                        const scoreComp = sep > 0 ? MATCH_NOTES[m.id].slice(0, sep) : ''
+                        const reason = sep > 0 ? MATCH_NOTES[m.id].slice(sep + 3) : MATCH_NOTES[m.id]
                         return (
                           <div className="mt-1 leading-tight">
                             {scoreComp && <div className="text-yellow-400 text-[11px] font-semibold">{scoreComp}</div>}

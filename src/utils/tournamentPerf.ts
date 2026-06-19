@@ -7,6 +7,7 @@
  */
 
 import { teams } from '../data/teams'
+import { LIVE_SCORES } from '../data/results'
 
 // ── Group matches (same data as ScheduleView / accuracy.ts) ─
 
@@ -126,17 +127,7 @@ function buildGroupMatches(): FlatMatch[] {
   return result
 }
 
-/** Default scores from ScheduleView (hardcoded fallback) */
-const DEFAULT_SCORES: Record<string, string> = {
-  'g-A-0': '2-0',
-  'g-A-1': '2-1',
-  'g-B-0': '1-1',
-  'g-D-0': '4-1',
-  'g-B-1': '1-1',
-  'g-C-0': '1-1',
-  'g-C-1': '0-1',
-  'g-D-1': '2-0',
-}
+/** 封存比分 from src/data/results.ts */
 
 export interface TeamPerf {
   teamId: string
@@ -165,7 +156,7 @@ export interface TeamPerf {
  */
 export function computeTournamentPerf(): TeamPerf[] {
   // Read actual scores from localStorage, with defaults
-  let liveScores: Record<string, string> = { ...DEFAULT_SCORES }
+  let liveScores: Record<string, string> = { ...LIVE_SCORES }
   try {
     const stored = JSON.parse(localStorage.getItem('wc26-scores') || '{}')
     liveScores = { ...liveScores, ...stored }

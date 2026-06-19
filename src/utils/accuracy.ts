@@ -1,24 +1,14 @@
 /**
  * accuracy.ts — compute prediction accuracy statistics
  *
- * Reads actual match scores (from localStorage wc26-scores) and compares them
- * against the deterministic prediction model (same as ScheduleView).
+ * Uses the unified match results from src/data/results.ts (封存数据)
+ * and falls back to localStorage for user-entered scores.
  */
 
 import { teams } from '../data/teams'
+import { LIVE_SCORES, FROZEN_PREDICTIONS } from '../data/results'
 
-// ── Match types (mirrored from ScheduleView) ───────────────
-
-interface Match {
-  id: string
-  date: string
-  dateNum: number
-  timeStr: string     // "HH:MM" local time
-  home: string
-  away: string
-  round: string
-  group?: string
-}
+// ── Match types ─────────────────────────────────────────────
 
 interface MatchAccuracy {
   matchId: string
@@ -41,7 +31,7 @@ export interface AccuracyStats {
   matchDetails: MatchAccuracy[]
 }
 
-// ── Group matches (same data as ScheduleView) ──────────────
+// ── Group matches (mirrored from ScheduleView) ──────────────
 
 type RawMatch = [string, string, string, string, string]
 
@@ -145,19 +135,16 @@ const groupMatches: Record<string, RawMatch[]> = {
 }
 
 /** Build flat list of group matches */
-function buildGroupMatches(): Match[] {
-  const result: Match[] = []
+function buildGroupMatches(): { id: string; dateNum: number; timeStr: string; home: string; away: string }[] {
+  const result: { id: string; dateNum: number; timeStr: string; home: string; away: string }[] = []
   for (const [g, raw] of Object.entries(groupMatches)) {
     raw.forEach(([date, time, home, away], mi) => {
       result.push({
         id: `g-${g}-${mi}`,
-        date,
         dateNum: parseDateNum(date),
         timeStr: time,
         home,
         away,
-        round: 'group',
-        group: g,
       })
     })
   }
@@ -177,87 +164,18 @@ function getOutcome(homeScore: number, awayScore: number): 'home' | 'draw' | 'aw
   return 'draw'
 }
 
-/** Default scores from ScheduleView (hardcoded fallback) */
-const DEFAULT_SCORES: Record<string, string> = {
-  'g-A-0': '2-0',   // Mexico 2-0 South Africa
-  'g-A-1': '2-1',   // South Korea 2-1 Czech Republic
-  'g-B-0': '1-1',   // Canada 1-1 Bosnia
-  'g-D-0': '4-1',   // USA 4-1 Paraguay
-  'g-B-1': '1-1',   // Qatar 1-1 Switzerland
-  'g-C-0': '1-1',   // Brazil 1-1 Morocco
-  'g-C-1': '0-1',   // Haiti 0-1 Scotland
-  'g-D-1': '2-0',   // Australia 2-0 Turkey
-  'g-E-0': '7-1',   // Germany 7-1 Curacao
-  'g-F-0': '2-2',   // Netherlands 2-2 Japan
-  'g-E-1': '1-0',   // Ivory Coast 1-0 Ecuador
-  'g-F-1': '5-1',   // Sweden 5-1 Tunisia
-  'g-G-0': '1-1',   // Belgium 1-1 Egypt
-  'g-H-0': '0-0',   // Spain 0-0 Cape Verde
-  'g-H-1': '1-1',   // Saudi Arabia 1-1 Uruguay
-  'g-G-1': '2-2',   // Iran 2-2 New Zealand
-  'g-I-0': '3-1',   // France 3-1 Senegal
-  'g-I-1': '1-4',   // Iraq 1-4 Norway (updated)
-  'g-J-1': '3-1',   // Austria 3-1 Jordan
-  'g-J-0': '3-0',   // Argentina 3-0 Algeria
-}
-
-/** Hardcoded old-model predictions for the default-score matches.
- *  Written to stone so algorithm updates never affect completed matches. */
-const DEFAULT_PREDICTIONS: Record<string, string> = {
-  'g-A-0': '2-1',   // Mexico 2-1 South Africa
-  'g-A-1': '1-1',   // South Korea 1-1 Czech Republic
-  'g-B-0': '2-1',   // Canada 2-1 Bosnia
-  'g-D-0': '2-1',   // USA 2-1 Paraguay
-  'g-B-1': '1-3',   // Qatar 1-3 Switzerland
-  'g-C-0': '2-1',   // Brazil 2-1 Morocco
-  'g-C-1': '0-3',   // Haiti 0-3 Scotland
-  'g-D-1': '1-2',   // Australia 1-2 Turkey
-  'g-E-0': '5-0',   // Germany 5-0 Curacao
-  'g-F-0': '1-1',   // Netherlands 1-1 Japan
-  'g-E-1': '1-1',   // Ivory Coast 1-1 Ecuador
-  'g-F-1': '3-0',   // Sweden 3-0 Tunisia
-  'g-G-0': '2-0',   // Belgium 2-0 Egypt
-  'g-G-1': '3-0',   // Iran 3-0 New Zealand
-  'g-H-0': '4-0',   // Spain 4-0 Cape Verde
-  'g-H-1': '0-2',   // Saudi Arabia 0-2 Uruguay
-  'g-I-0': '2-0',   // France 2-0 Senegal
-  'g-I-1': '0-3',   // Iraq 0-3 Norway
-  'g-J-1': '4-0',   // Austria 4-0 Jordan (old model)
-  'g-J-0': '3-0',   // Argentina 3-0 Algeria (old model)
-  'g-A-2': '2-1',   'g-A-3': '2-1',   'g-A-4': '2-1',   'g-A-5': '1-2',
-  'g-B-2': '2-1',   'g-B-3': '2-1',   'g-B-4': '2-1',   'g-B-5': '2-1',
-  'g-C-2': '1-2',   'g-C-3': '3-0',   'g-C-4': '1-2',   'g-C-5': '2-0',
-  'g-D-2': '2-1',   'g-D-3': '2-1',   'g-D-4': '2-1',   'g-D-5': '2-1',
-  'g-E-2': '2-1',   'g-E-3': '3-0',   'g-E-4': '0-2',   'g-E-5': '1-2',
-  'g-F-2': '2-1',   'g-F-3': '1-2',   'g-F-4': '2-1',   'g-F-5': '0-2',
-  'g-G-2': '2-1',   'g-G-3': '1-2',   'g-G-4': '2-1',   'g-G-5': '0-2',
-  'g-H-2': '2-0',   'g-H-3': '2-0',   'g-H-4': '2-1',   'g-H-5': '1-2',
-  'g-I-2': '2-0',   'g-I-3': '2-1',   'g-I-4': '1-2',   'g-I-5': '2-0',
-  'g-J-2': '2-1',   'g-J-3': '1-2',   'g-J-4': '1-2',   'g-J-5': '0-2',
-  'g-K-0': '2-0',   'g-K-1': '0-2',   'g-K-2': '2-0',   'g-K-3': '2-0',
-  'g-K-4': '1-2',   'g-K-5': '2-1',
-  'g-L-0': '2-1',   'g-L-1': '2-1',   'g-L-2': '2-0',   'g-L-3': '1-2',
-  'g-L-4': '2-0',   'g-L-5': '2-1',
-}
-
 export function computeAccuracy(): AccuracyStats {
-  // Read actual scores from localStorage, fall back to defaults
-  let liveScores: Record<string, string> = { ...DEFAULT_SCORES }
+  // Read actual scores: 封存数据优先，localStorage 覆盖（用户手动调整）
+  let liveScores: Record<string, string> = { ...LIVE_SCORES }
   try {
     const stored = JSON.parse(localStorage.getItem('wc26-scores') || '{}')
     liveScores = { ...liveScores, ...stored }
   } catch { /* ignore */ }
 
-  // Read cached predictions (set by ScheduleView)
+  // Read cached predictions (set by ScheduleView for future matches)
   let cachedPreds: Record<string, string> = {}
   try {
     cachedPreds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
-  } catch { /* ignore */ }
-
-  // Also check frozen predictions (for matches within 2 days)
-  let frozenPreds: Record<string, string> = {}
-  try {
-    frozenPreds = JSON.parse(localStorage.getItem('wc26-frozen-predictions') || '{}')
   } catch { /* ignore */ }
 
   // Build team name map
@@ -276,9 +194,9 @@ export function computeAccuracy(): AccuracyStats {
     const awayTeam = teamMap.get(m.away)
     if (!homeTeam || !awayTeam) continue
 
-    // Use hardcoded default prediction first, then frozen, then cached.
+    // Use 封存预测 first, then localStorage cached predictions.
     // Never recompute — completed-match predictions are written in stone.
-    const predicted = DEFAULT_PREDICTIONS[m.id] || frozenPreds[m.id] || cachedPreds[m.id] || ''
+    const predicted = FROZEN_PREDICTIONS[m.id] || cachedPreds[m.id] || ''
     if (!predicted) continue
 
     const [aH, aA] = actualScore.split('-').map(Number)

@@ -7,7 +7,7 @@
  */
 import { useMemo, useState } from 'react'
 import { computeAccuracy, type AccuracyStats } from '../utils/accuracy'
-import { matchNotes } from './ScheduleView'
+import { MATCH_NOTES } from '../data/results'
 
 export function AccuracyView() {
   const stats = useMemo(() => computeAccuracy(), [])
@@ -144,7 +144,7 @@ function OutcomeAccuracySection({ stats }: { stats: AccuracyStats }) {
           </thead>
           <tbody className="divide-y divide-slate-700/30">
             {items.map(d => {
-              const note = matchNotes[d.matchId] || ''
+              const note = MATCH_NOTES[d.matchId] || ''
               const sep = note.indexOf(' | ')
               const analysis = sep > 0 ? note.slice(sep + 3) : ''
               return (
@@ -269,7 +269,7 @@ function ScoreAccuracySection({ stats }: { stats: AccuracyStats }) {
                   compIcon = '❌'; compLabel = '错误'; compColor = 'text-red-400'
                 }
               }
-              const note = matchNotes[d.matchId] || ''
+              const note = MATCH_NOTES[d.matchId] || ''
               const sep = note.indexOf(' | ')
               const analysis = sep > 0 ? note.slice(sep + 3) : ''
               return (
