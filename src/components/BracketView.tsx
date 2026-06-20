@@ -54,44 +54,12 @@ export function BracketView({ scores, standings }: Props) {
     allThird.sort((a, b) => b.pts - a.pts)
     const bestThird = allThird.slice(0, 8)
 
-    // Assign third-placed teams to 8 slots
-    // Phase 1: try group-constrained assignment (best fit)
-    // Phase 2: any unfilled slots get the next best available regardless of group
-    const thirdSlots: { matchIdx: number; allowedGroups: string[] }[] = [
-      { matchIdx: 74, allowedGroups: ['A','B','C','D','F'] },
-      { matchIdx: 77, allowedGroups: ['C','D','F','G','H'] },
-      { matchIdx: 79, allowedGroups: ['C','E','F','H','I'] },
-      { matchIdx: 80, allowedGroups: ['E','H','I','J','K'] },
-      { matchIdx: 81, allowedGroups: ['B','E','F','I','J'] },
-      { matchIdx: 82, allowedGroups: ['A','E','H','I','J'] },
-      { matchIdx: 85, allowedGroups: ['E','F','G','I','J'] },
-      { matchIdx: 87, allowedGroups: ['D','E','I','J','L'] },
-    ]
-
+    // Assign 8 best third-placed teams to the 8 third-placed slots by rank
+    // (best 3rd → match 74, 2nd best → match 77, ...)
+    const thirdMatchOrder = [74, 77, 79, 80, 81, 82, 85, 87]
     const assigned = new Map<number, TeamScores>()
-    const used = new Set<string>()
-
-    // Phase 1: try group-constrained match
-    for (const { matchIdx, allowedGroups } of thirdSlots) {
-      for (const candidate of bestThird) {
-        if (used.has(candidate.team.teamId)) continue
-        if (allowedGroups.includes(candidate.team.group)) {
-          assigned.set(matchIdx, candidate.team)
-          used.add(candidate.team.teamId)
-          break
-        }
-      }
-    }
-
-    // Phase 2: fill remaining slots with best available (any group)
-    for (const { matchIdx } of thirdSlots) {
-      if (assigned.has(matchIdx)) continue
-      for (const candidate of bestThird) {
-        if (used.has(candidate.team.teamId)) continue
-        assigned.set(matchIdx, candidate.team)
-        used.add(candidate.team.teamId)
-        break
-      }
+    for (let i = 0; i < Math.min(bestThird.length, 8); i++) {
+      assigned.set(thirdMatchOrder[i], bestThird[i].team)
     }
 
     // Exact 32强 bracket (2026 FIFA World Cup format)
@@ -129,9 +97,10 @@ export function BracketView({ scores, standings }: Props) {
       const [homeSlot, awaySlot] = def
       const home = resolveSlot(homeSlot)
       const away = resolveSlot(awaySlot)
-      if (home) r32.push(home)
-      if (away) r32.push(away)
-      if (home && away) pairs.push([home, away])
+      if (!home || !away) continue
+      r32.push(home)
+      r32.push(away)
+      pairs.push([home, away])
     }
 
     return { sorted: r32, pairs }
