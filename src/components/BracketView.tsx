@@ -54,8 +54,9 @@ export function BracketView({ scores, standings }: Props) {
     allThird.sort((a, b) => b.pts - a.pts)
     const bestThird = allThird.slice(0, 8)
 
-    // Assign third-placed teams to slots based on group constraints
-    // Each slot has a list of allowed groups the 3rd-place team can come from
+    // Assign third-placed teams to 8 slots
+    // Phase 1: try group-constrained assignment (best fit)
+    // Phase 2: any unfilled slots get the next best available regardless of group
     const thirdSlots: { matchIdx: number; allowedGroups: string[] }[] = [
       { matchIdx: 74, allowedGroups: ['A','B','C','D','F'] },
       { matchIdx: 77, allowedGroups: ['C','D','F','G','H'] },
@@ -67,10 +68,10 @@ export function BracketView({ scores, standings }: Props) {
       { matchIdx: 87, allowedGroups: ['D','E','I','J','L'] },
     ]
 
-    // Assign: for each slot (by match number order), pick the best available third-placed
-    // team whose group is in the allowed list
-    const assigned = new Map<number, TeamScores>() // matchIdx → team
-    const used = new Set<string>() // used teamIds
+    const assigned = new Map<number, TeamScores>()
+    const used = new Set<string>()
+
+    // Phase 1: try group-constrained match
     for (const { matchIdx, allowedGroups } of thirdSlots) {
       for (const candidate of bestThird) {
         if (used.has(candidate.team.teamId)) continue
@@ -79,6 +80,17 @@ export function BracketView({ scores, standings }: Props) {
           used.add(candidate.team.teamId)
           break
         }
+      }
+    }
+
+    // Phase 2: fill remaining slots with best available (any group)
+    for (const { matchIdx } of thirdSlots) {
+      if (assigned.has(matchIdx)) continue
+      for (const candidate of bestThird) {
+        if (used.has(candidate.team.teamId)) continue
+        assigned.set(matchIdx, candidate.team)
+        used.add(candidate.team.teamId)
+        break
       }
     }
 
