@@ -78,7 +78,7 @@ export function GroupView({ scores, standings }: Props) {
                           const st = standings.get(g)?.find(s => s.teamId === t.teamId)
                           if (!st) return null
                           return (
-                            <div className="flex items-center gap-2 mt-0.5 text-[11px] font-mono">
+                            <div className="flex items-center gap-2 mt-0.5 text-[11px] font-mono whitespace-nowrap">
                               <span className="text-emerald-400 font-semibold">
                                 {st.actualPts > 0 ? `${st.actualPts}+${st.predPts}` : `${st.pts}`}分
                               </span>

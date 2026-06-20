@@ -2,9 +2,8 @@
  * standings.ts — Compute group standings from actual + predicted scores
  *
  * Each group has 4 teams playing round-robin (6 matches).
- * Match pairings follow the real schedule pattern:
- *   (0,1), (2,3), (3,1), (0,2), (3,0), (1,2) — first index is home
- * Match IDs follow the pattern `g-{group}-{pairingIndex}` (0–5).
+ * Match pairings are derived from the real schedule (ScheduleView's groupMatches).
+ * Match IDs follow the pattern `g-{group}-{index}` (0–5).
  *
  * For completed matches (in liveScores), actual results are used.
  * For unplayed matches, scores are predicted via the Poisson engine.
@@ -29,16 +28,31 @@ export interface GroupStanding {
   losses: number
 }
 
-/** Pairings: (homeIdx, awayIdx, matchIdSuffix) — based on the real schedule */
-const PAIRINGS: [number, number, number][] = [
-  [0, 1, 0], [2, 3, 1], [3, 1, 2], [0, 2, 3], [3, 0, 4], [1, 2, 5],
-]
+/**
+ * Real group-match pairings as [homeTeamId, awayTeamId] per match index (0–5).
+ * Each group has 6 round-robin matches.
+ * Match ID = `g-${group}-${index}`.
+ */
+const GROUP_MATCHES: Record<string, [string, string][]> = {
+  A: [['mexico','south-africa'],['south-korea','czech-republic'],['czech-republic','south-africa'],['mexico','south-korea'],['czech-republic','mexico'],['south-africa','south-korea']],
+  B: [['canada','bosnia'],['qatar','switzerland'],['switzerland','bosnia'],['canada','qatar'],['switzerland','canada'],['bosnia','qatar']],
+  C: [['brazil','morocco'],['haiti','scotland'],['scotland','morocco'],['brazil','haiti'],['scotland','brazil'],['morocco','haiti']],
+  D: [['usa','paraguay'],['australia','turkey'],['usa','australia'],['turkey','paraguay'],['turkey','usa'],['paraguay','australia']],
+  E: [['germany','curacao'],['ivory-coast','ecuador'],['germany','ivory-coast'],['ecuador','curacao'],['curacao','ivory-coast'],['ecuador','germany']],
+  F: [['netherlands','japan'],['sweden','tunisia'],['netherlands','sweden'],['tunisia','japan'],['japan','sweden'],['tunisia','netherlands']],
+  G: [['belgium','egypt'],['iran','new-zealand'],['belgium','iran'],['new-zealand','egypt'],['egypt','iran'],['new-zealand','belgium']],
+  H: [['spain','cape-verde'],['saudi-arabia','uruguay'],['spain','saudi-arabia'],['uruguay','cape-verde'],['cape-verde','saudi-arabia'],['uruguay','spain']],
+  I: [['france','senegal'],['iraq','norway'],['france','iraq'],['norway','senegal'],['norway','france'],['senegal','iraq']],
+  J: [['argentina','algeria'],['austria','jordan'],['argentina','austria'],['jordan','algeria'],['algeria','austria'],['jordan','argentina']],
+  K: [['portugal','dr-congo'],['uzbekistan','colombia'],['portugal','uzbekistan'],['colombia','dr-congo'],['colombia','portugal'],['dr-congo','uzbekistan']],
+  L: [['england','croatia'],['ghana','panama'],['england','ghana'],['panama','croatia'],['panama','england'],['croatia','ghana']],
+}
 
 /**
  * Compute standings for one group (4 teams).
  *
- * @param groupTeams  The 4 teams in this group, in original roster order
- * @param groupLabel  Group label (e.g. "A", "B") used to form match IDs
+ * @param groupTeams  The 4 teams in this group
+ * @param groupLabel  Group label (e.g. "A", "B")
  * @param liveScores  Actual scores keyed by match ID (e.g. "g-A-0": "2-1")
  */
 export function computeGroupStandings(
@@ -46,20 +60,27 @@ export function computeGroupStandings(
   groupLabel: string,
   liveScores: Record<string, string>,
 ): GroupStanding[] {
-  if (groupTeams.length !== 4) return []
+  const pairings = GROUP_MATCHES[groupLabel]
+  if (!pairings || pairings.length !== 6) return []
 
-  const standings: Record<string, GroupStanding> = {}
+  // Build a lookup: teamId → TeamScores
+  const tm = new Map<string, TeamScores>()
+  for (const t of groupTeams) tm.set(t.teamId, t)
+
+  const standings = new Map<string, GroupStanding>()
   for (const t of groupTeams) {
-    standings[t.teamId] = {
+    standings.set(t.teamId, {
       teamId: t.teamId, pts: 0, actualPts: 0, predPts: 0,
       gf: 0, ga: 0, gd: 0, wins: 0, draws: 0, losses: 0,
-    }
+    })
   }
 
-  for (const [hIdx, aIdx, mi] of PAIRINGS) {
-    const home = groupTeams[hIdx]
-    const away = groupTeams[aIdx]
+  for (let mi = 0; mi < pairings.length; mi++) {
+    const [homeId, awayId] = pairings[mi]
     const matchId = `g-${groupLabel}-${mi}`
+    const home = tm.get(homeId)
+    const away = tm.get(awayId)
+    if (!home || !away) continue
 
     const realScore = liveScores[matchId]
     let hG: number, aG: number
@@ -75,45 +96,35 @@ export function computeGroupStandings(
       isActual = false
     }
 
-    standings[home.teamId].gf += hG
-    standings[home.teamId].ga += aG
-    standings[away.teamId].gf += aG
-    standings[away.teamId].ga += hG
+    const hs = standings.get(homeId)!
+    const as = standings.get(awayId)!
+
+    hs.gf += hG; hs.ga += aG
+    as.gf += aG; as.ga += hG
 
     if (hG > aG) {
-      standings[home.teamId].pts += 3
-      standings[home.teamId].wins += 1
-      if (isActual) standings[home.teamId].actualPts += 3
-      else standings[home.teamId].predPts += 3
-      standings[away.teamId].losses += 1
+      hs.pts += 3; hs.wins += 1
+      if (isActual) hs.actualPts += 3; else hs.predPts += 3
+      as.losses += 1
     } else if (aG > hG) {
-      standings[away.teamId].pts += 3
-      standings[away.teamId].wins += 1
-      if (isActual) standings[away.teamId].actualPts += 3
-      else standings[away.teamId].predPts += 3
-      standings[home.teamId].losses += 1
+      as.pts += 3; as.wins += 1
+      if (isActual) as.actualPts += 3; else as.predPts += 3
+      hs.losses += 1
     } else {
-      standings[home.teamId].pts += 1
-      standings[away.teamId].pts += 1
-      standings[home.teamId].draws += 1
-      standings[away.teamId].draws += 1
-      if (isActual) {
-        standings[home.teamId].actualPts += 1
-        standings[away.teamId].actualPts += 1
-      } else {
-        standings[home.teamId].predPts += 1
-        standings[away.teamId].predPts += 1
-      }
+      hs.pts += 1; as.pts += 1
+      hs.draws += 1; as.draws += 1
+      if (isActual) { hs.actualPts += 1; as.actualPts += 1 }
+      else { hs.predPts += 1; as.predPts += 1 }
     }
   }
 
   // GD
-  for (const s of Object.values(standings)) {
+  for (const s of standings.values()) {
     s.gd = s.gf - s.ga
   }
 
   // Sort by pts → GD → GF
-  return Object.values(standings).sort((a, b) => {
+  return Array.from(standings.values()).sort((a, b) => {
     if (b.pts !== a.pts) return b.pts - a.pts
     if (b.gd !== a.gd) return b.gd - a.gd
     return b.gf - a.gf
