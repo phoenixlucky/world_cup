@@ -6,13 +6,24 @@
  */
 import { useMemo } from 'react'
 import type { TeamScores } from '../engine/scorer'
+import type { GroupStanding } from '../engine/standings'
 import { FlagImg } from './FlagImg'
 
 interface Props {
   scores: TeamScores[]
+  standings: Map<string, GroupStanding[]>
 }
 
-export function BracketView({ scores }: Props) {
+export function BracketView({ scores, standings }: Props) {
+  // Helper: get total points from standings for a team
+  const ptsMap = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const [, sts] of standings) {
+      for (const st of sts) m.set(st.teamId, st.pts)
+    }
+    return m
+  }, [standings])
+
   // Seed the 32 knockout teams: group winners + runners-up + best 8 thirds
   const bracket = useMemo(() => {
     // Group teams
@@ -26,23 +37,35 @@ export function BracketView({ scores }: Props) {
     const runnersUp: TeamScores[] = []
     const thirdPlace: TeamScores[] = []
 
-    for (const [, gTeams] of groups) {
-      const sorted = [...gTeams].sort((a, b) => b.total - a.total)
-      if (sorted[0]) groupWinners.push(sorted[0])
-      if (sorted[1]) runnersUp.push(sorted[1])
-      if (sorted[2]) thirdPlace.push(sorted[2])
+    for (const [g, gTeams] of groups) {
+      const groupSt = standings.get(g)
+      if (groupSt) {
+        // Use standings order (actualPts → predPts → GD → GF)
+        const rankMap = new Map(groupSt.map((s, i) => [s.teamId, i]))
+        const sorted = [...gTeams].sort(
+          (a, b) => (rankMap.get(a.teamId) ?? 99) - (rankMap.get(b.teamId) ?? 99)
+        )
+        if (sorted[0]) groupWinners.push(sorted[0])
+        if (sorted[1]) runnersUp.push(sorted[1])
+        if (sorted[2]) thirdPlace.push(sorted[2])
+      } else {
+        // Fallback: sort by total
+        const sorted = [...gTeams].sort((a, b) => b.total - a.total)
+        if (sorted[0]) groupWinners.push(sorted[0])
+        if (sorted[1]) runnersUp.push(sorted[1])
+        if (sorted[2]) thirdPlace.push(sorted[2])
+      }
     }
 
-    // Top 8 third-placed teams (by total score)
-    thirdPlace.sort((a, b) => b.total - a.total)
+    // Top 8 third-placed teams (by standings pts)
+    thirdPlace.sort((a, b) => (ptsMap.get(b.teamId) ?? 0) - (ptsMap.get(a.teamId) ?? 0))
     const bestThird = thirdPlace.slice(0, 8)
 
-    // Seed 32: group winners (1-12) interleaved with best thirds, then runners-up
+    // Seed 32: group winners + runners-up + best thirds
     const all32: TeamScores[] = [...groupWinners, ...runnersUp, ...bestThird]
 
-    // Create bracket pairs (32 → 16)
-    // Simplified pairing: sorted by score, then paired
-    const sorted = [...all32].sort((a, b) => b.total - a.total)
+    // Sort by standings pts for balanced bracket pairing
+    const sorted = [...all32].sort((a, b) => (ptsMap.get(b.teamId) ?? 0) - (ptsMap.get(a.teamId) ?? 0))
     const pairs: [TeamScores, TeamScores][] = []
     for (let i = 0; i < sorted.length; i += 2) {
       if (i + 1 < sorted.length) {
@@ -51,7 +74,7 @@ export function BracketView({ scores }: Props) {
     }
 
     return { sorted, pairs }
-  }, [scores])
+  }, [scores, standings, ptsMap])
 
   const roundName = (round: number) => {
     switch (round) {
@@ -64,7 +87,7 @@ export function BracketView({ scores }: Props) {
     }
   }
 
-  // Simulate rounds to show predicted winners
+  // Simulate rounds to show predicted winners (by standings pts)
   const predictedChampion = useMemo(() => {
     const smap = new Map(scores.map(s => [s.teamId, s]))
     let currentRound = bracket.sorted.map(s => s.teamId)
@@ -76,8 +99,9 @@ export function BracketView({ scores }: Props) {
         const a = smap.get(currentRound[i])
         const b = smap.get(currentRound[i + 1])
         if (a && b) {
-          // Higher score predicted to win
-          nextRound.push(a.total >= b.total ? a.teamId : b.teamId)
+          const aPts = ptsMap.get(a.teamId) ?? a.total
+          const bPts = ptsMap.get(b.teamId) ?? b.total
+          nextRound.push(aPts >= bPts ? a.teamId : b.teamId)
         } else {
           nextRound.push(a ? a.teamId : b!.teamId)
         }
@@ -87,7 +111,7 @@ export function BracketView({ scores }: Props) {
     }
 
     return { rounds, champion: currentRound[0] }
-  }, [bracket, scores])
+  }, [bracket, scores, ptsMap])
 
   const smap = new Map(scores.map(s => [s.teamId, s]))
 
@@ -134,9 +158,11 @@ export function BracketView({ scores }: Props) {
                       </span>
                     </div>
                     <span className={`text-xs font-mono font-bold ${
-                      t.total >= 70 ? 'text-green-400' : 'text-slate-400'
+                      ptsMap.get(teamId) != null
+                        ? 'text-emerald-400'
+                        : 'text-slate-400'
                     }`}>
-                      {t.total.toFixed(0)}
+                      {ptsMap.get(teamId) != null ? `${ptsMap.get(teamId)}分` : t.total.toFixed(0)}
                     </span>
                     {isWinner && !isLast && (
                       <span className="text-green-400 text-xs">✓</span>
@@ -160,7 +186,7 @@ export function BracketView({ scores }: Props) {
             <p className="text-sm text-yellow-400 mb-2">🏆 预测冠军</p>
             <FlagImg code={c.flagCode} size={40} className="mr-3" />
             <span className="text-2xl font-bold text-white">{c.teamNameCN}</span>
-            <p className="text-slate-400 mt-1">{c.teamName} — 综合评分 {c.total.toFixed(1)}</p>
+            <p className="text-slate-400 mt-1">{c.teamName} — 预测积分 {ptsMap.get(c.teamId) ?? c.total.toFixed(1)} 分</p>
           </div>
         ) : null
       })()}
