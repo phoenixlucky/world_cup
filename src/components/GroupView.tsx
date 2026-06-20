@@ -1,8 +1,9 @@
 /**
- * GroupView — displays all 12 groups with team ratings and predicted qualifiers
+ * GroupView — displays all 12 groups with team ratings, predicted qualifiers, and standings
  */
 import { useMemo } from 'react'
 import type { TeamScores } from '../engine/scorer'
+import type { GroupStanding } from '../engine/standings'
 import { FlagImg } from './FlagImg'
 
 // ── Group label colors (matching ScheduleView) ─────────────
@@ -15,9 +16,10 @@ import { groupNames } from '../data/teams'
 
 interface Props {
   scores: TeamScores[]
+  standings: Map<string, GroupStanding[]>
 }
 
-export function GroupView({ scores }: Props) {
+export function GroupView({ scores, standings }: Props) {
   const groups = useMemo(() => {
     const map = new Map<string, TeamScores[]>()
     for (const g of groupNames) {
@@ -74,7 +76,21 @@ export function GroupView({ scores }: Props) {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                    <div className="flex items-center gap-3 flex-shrink-0 ml-2">
+                      {/* Standings: PTS + GD */}
+                      {(() => {
+                        const groupStandings = standings.get(g)
+                        const st = groupStandings?.find(s => s.teamId === t.teamId)
+                        return st ? (
+                          <div className="flex items-center gap-2 text-xs font-mono">
+                            <span className="text-emerald-400 font-bold">{st.pts}分</span>
+                            <span className={st.gd >= 0 ? 'text-green-400' : 'text-red-400'}>
+                              {st.gd >= 0 ? '+' : ''}{st.gd}
+                            </span>
+                            <span className="text-slate-500">{st.gf}:{st.ga}</span>
+                          </div>
+                        ) : null
+                      })()}
                       <span className={`text-sm font-mono font-bold ${
                         t.total >= 70 ? 'text-green-400' :
                         t.total >= 55 ? 'text-blue-400' :
@@ -101,8 +117,14 @@ export function GroupView({ scores }: Props) {
 
             {/* Group summary */}
             <div className="px-4 py-2 bg-slate-900/50 text-xs text-slate-500 border-t border-slate-700/50">
-              预测出线: {top2.map(t => t.teamNameCN).join(', ')}
-              {third && ` | 第3名: ${third.teamNameCN}`}
+              预测出线: {top2.map(t => {
+                const st = standings.get(g)?.find(s => s.teamId === t.teamId)
+                return `${t.teamNameCN}${st ? `(${st.pts}分)` : ''}`
+              }).join(', ')}
+              {third && (() => {
+                const st = standings.get(g)?.find(s => s.teamId === third.teamId)
+                return ` | 第3名: ${third.teamNameCN}${st ? `(${st.pts}分)` : ''}`
+              })()}
             </div>
           </div>
         )

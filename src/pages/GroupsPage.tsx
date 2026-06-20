@@ -4,6 +4,7 @@
 import { useState, useMemo } from 'react'
 import { useTeamData } from '../hooks/useTeamData'
 import { computeScores, DEFAULT_WEIGHTS, type Weights } from '../engine/scorer'
+import { computeAllStandings } from '../engine/standings'
 import { WeightPanel } from '../components/WeightPanel'
 import { GroupView } from '../components/GroupView'
 
@@ -15,6 +16,8 @@ export function GroupsPage() {
     () => computeScores(teams, weights),
     [teams, weights],
   )
+
+  const standings = useMemo(() => computeAllStandings(scores), [scores])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -28,7 +31,7 @@ export function GroupsPage() {
           <WeightPanel weights={weights} onChange={setWeights} />
         </div>
         <div className="lg:col-span-3">
-          <GroupView scores={scores} />
+          <GroupView scores={scores} standings={standings} />
         </div>
       </div>
     </div>
