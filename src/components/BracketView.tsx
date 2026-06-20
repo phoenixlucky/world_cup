@@ -15,15 +15,6 @@ interface Props {
 }
 
 export function BracketView({ scores, standings }: Props) {
-  // Helper: get total points from standings for a team
-  const ptsMap = useMemo(() => {
-    const m = new Map<string, number>()
-    for (const [, sts] of standings) {
-      for (const st of sts) m.set(st.teamId, st.pts)
-    }
-    return m
-  }, [standings])
-
   // Seed the 32 knockout teams: group winners + runners-up + best 8 thirds
   const bracket = useMemo(() => {
     // Group teams
@@ -58,14 +49,18 @@ export function BracketView({ scores, standings }: Props) {
     }
 
     // Top 8 third-placed teams (by standings pts)
-    thirdPlace.sort((a, b) => (ptsMap.get(b.teamId) ?? 0) - (ptsMap.get(a.teamId) ?? 0))
+    thirdPlace.sort((a, b) => {
+      const aSt = standings.get(a.group)?.find(s => s.teamId === a.teamId)
+      const bSt = standings.get(b.group)?.find(s => s.teamId === b.teamId)
+      return (bSt?.pts ?? 0) - (aSt?.pts ?? 0)
+    })
     const bestThird = thirdPlace.slice(0, 8)
 
     // Seed 32: group winners + runners-up + best thirds
     const all32: TeamScores[] = [...groupWinners, ...runnersUp, ...bestThird]
 
-    // Sort by standings pts for balanced bracket pairing
-    const sorted = [...all32].sort((a, b) => (ptsMap.get(b.teamId) ?? 0) - (ptsMap.get(a.teamId) ?? 0))
+    // Sort by comprehensive strength (total) for balanced bracket pairing
+    const sorted = [...all32].sort((a, b) => b.total - a.total)
     const pairs: [TeamScores, TeamScores][] = []
     for (let i = 0; i < sorted.length; i += 2) {
       if (i + 1 < sorted.length) {
@@ -74,7 +69,7 @@ export function BracketView({ scores, standings }: Props) {
     }
 
     return { sorted, pairs }
-  }, [scores, standings, ptsMap])
+  }, [scores, standings])
 
   const roundName = (round: number) => {
     switch (round) {
@@ -87,7 +82,7 @@ export function BracketView({ scores, standings }: Props) {
     }
   }
 
-  // Simulate rounds to show predicted winners (by standings pts)
+  // Simulate rounds: winner decided by comprehensive strength (total score)
   const predictedChampion = useMemo(() => {
     const smap = new Map(scores.map(s => [s.teamId, s]))
     let currentRound = bracket.sorted.map(s => s.teamId)
@@ -99,9 +94,7 @@ export function BracketView({ scores, standings }: Props) {
         const a = smap.get(currentRound[i])
         const b = smap.get(currentRound[i + 1])
         if (a && b) {
-          const aPts = ptsMap.get(a.teamId) ?? a.total
-          const bPts = ptsMap.get(b.teamId) ?? b.total
-          nextRound.push(aPts >= bPts ? a.teamId : b.teamId)
+          nextRound.push(a.total >= b.total ? a.teamId : b.teamId)
         } else {
           nextRound.push(a ? a.teamId : b!.teamId)
         }
@@ -111,7 +104,7 @@ export function BracketView({ scores, standings }: Props) {
     }
 
     return { rounds, champion: currentRound[0] }
-  }, [bracket, scores, ptsMap])
+  }, [bracket, scores])
 
   const smap = new Map(scores.map(s => [s.teamId, s]))
 
@@ -158,11 +151,9 @@ export function BracketView({ scores, standings }: Props) {
                       </span>
                     </div>
                     <span className={`text-xs font-mono font-bold ${
-                      ptsMap.get(teamId) != null
-                        ? 'text-emerald-400'
-                        : 'text-slate-400'
+                      t.total >= 70 ? 'text-green-400' : 'text-slate-400'
                     }`}>
-                      {ptsMap.get(teamId) != null ? `${ptsMap.get(teamId)}分` : t.total.toFixed(0)}
+                      {t.total.toFixed(0)}
                     </span>
                     {isWinner && !isLast && (
                       <span className="text-green-400 text-xs">✓</span>
@@ -186,7 +177,7 @@ export function BracketView({ scores, standings }: Props) {
             <p className="text-sm text-yellow-400 mb-2">🏆 预测冠军</p>
             <FlagImg code={c.flagCode} size={40} className="mr-3" />
             <span className="text-2xl font-bold text-white">{c.teamNameCN}</span>
-            <p className="text-slate-400 mt-1">{c.teamName} — 预测积分 {ptsMap.get(c.teamId) ?? c.total.toFixed(1)} 分</p>
+            <p className="text-slate-400 mt-1">{c.teamName} — 综合评分 {c.total.toFixed(1)}</p>
           </div>
         ) : null
       })()}
