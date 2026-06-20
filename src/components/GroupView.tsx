@@ -73,24 +73,26 @@ export function GroupView({ scores, standings }: Props) {
                           {t.teamNameCN}
                         </span>
                         <span className="text-xs text-slate-500">{t.continent}</span>
+                        {/* Standings line: 实际+预测分  净胜球  进球:失球 */}
+                        {(() => {
+                          const st = standings.get(g)?.find(s => s.teamId === t.teamId)
+                          if (!st) return null
+                          return (
+                            <div className="flex items-center gap-2 mt-0.5 text-[11px] font-mono">
+                              <span className="text-emerald-400 font-semibold">
+                                {st.actualPts > 0 ? `${st.actualPts}+${st.predPts}` : `${st.pts}`}分
+                              </span>
+                              <span className={st.gd >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                {st.gd >= 0 ? '+' : ''}{st.gd}
+                              </span>
+                              <span className="text-slate-400">{st.gf}:{st.ga}</span>
+                            </div>
+                          )
+                        })()}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 flex-shrink-0 ml-2">
-                      {/* Standings: PTS + GD */}
-                      {(() => {
-                        const groupStandings = standings.get(g)
-                        const st = groupStandings?.find(s => s.teamId === t.teamId)
-                        return st ? (
-                          <div className="flex items-center gap-2 text-xs font-mono">
-                            <span className="text-emerald-400 font-bold">{st.pts}分</span>
-                            <span className={st.gd >= 0 ? 'text-green-400' : 'text-red-400'}>
-                              {st.gd >= 0 ? '+' : ''}{st.gd}
-                            </span>
-                            <span className="text-slate-500">{st.gf}:{st.ga}</span>
-                          </div>
-                        ) : null
-                      })()}
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                       <span className={`text-sm font-mono font-bold ${
                         t.total >= 70 ? 'text-green-400' :
                         t.total >= 55 ? 'text-blue-400' :

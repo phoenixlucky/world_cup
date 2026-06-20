@@ -5,6 +5,7 @@ import { useState, useMemo } from 'react'
 import { useTeamData } from '../hooks/useTeamData'
 import { computeScores, DEFAULT_WEIGHTS, type Weights } from '../engine/scorer'
 import { computeAllStandings } from '../engine/standings'
+import { LIVE_SCORES } from '../data/results'
 import { WeightPanel } from '../components/WeightPanel'
 import { GroupView } from '../components/GroupView'
 
@@ -17,7 +18,15 @@ export function GroupsPage() {
     [teams, weights],
   )
 
-  const standings = useMemo(() => computeAllStandings(scores), [scores])
+  const standings = useMemo(() => {
+    // Merge LIVE_SCORES with any user-edited scores from localStorage
+    let liveScores: Record<string, string> = {}
+    try {
+      liveScores = JSON.parse(localStorage.getItem('wc26-scores') || '{}')
+    } catch {}
+    liveScores = { ...LIVE_SCORES, ...liveScores }
+    return computeAllStandings(scores, liveScores)
+  }, [scores])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
