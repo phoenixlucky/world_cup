@@ -619,6 +619,23 @@ export function ScheduleView() {
     })
   }, [filterRound, filterGroup, filterVenue, filterTeam])
 
+  // Teams that have matches under current round/group/venue filters (excluding team filter)
+  const availableTeams = useMemo(() => {
+    const teamIds = new Set<string>()
+    for (const m of allMatches) {
+      if (filterRound !== 'all' && m.round !== filterRound) continue
+      if (filterGroup !== 'all' && m.group !== filterGroup) continue
+      if (filterVenue !== 'all' && m.venue !== filterVenue) continue
+      if (m.home) teamIds.add(m.home)
+      if (m.away) teamIds.add(m.away)
+    }
+    // Always include the currently selected team even if filtered out
+    if (filterTeam !== 'all') teamIds.add(filterTeam)
+    return teams
+      .filter(t => teamIds.has(t.id))
+      .sort((a, b) => a.nameCN.localeCompare(b.nameCN, 'zh'))
+  }, [filterRound, filterGroup, filterVenue, filterTeam])
+
   const byDate = useMemo(() => {
     const map = new Map<string, Match[]>()
     for (const m of filtered) {
@@ -661,8 +678,8 @@ export function ScheduleView() {
         <select value={filterTeam} onChange={e => setFilterTeam(e.target.value)}
           className="bg-slate-700 text-white text-sm rounded-lg px-3 py-2 border border-slate-600 max-w-[14rem]">
           <option value="all">全部球队</option>
-          {[...teams].sort((a, b) => a.nameCN.localeCompare(b.nameCN, 'zh')).map(t =>
-            <option key={t.id} value={t.id}>{t.flag} {t.nameCN}（{t.group}组）</option>
+          {availableTeams.map(t =>
+            <option key={t.id} value={t.id}>{t.nameCN}（{t.group}组）</option>
           )}
         </select>
         <span className="text-sm text-slate-400 self-center ml-auto">
