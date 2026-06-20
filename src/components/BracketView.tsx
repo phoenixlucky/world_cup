@@ -50,42 +50,71 @@ export function BracketView({ scores, standings }: Props) {
         allThird.push({ team: ranked[2], pts })
       }
     }
-    // Best 8 third-placed teams by pts
+    // Best 8 third-placed teams by pts (with group info)
     allThird.sort((a, b) => b.pts - a.pts)
-    const bestThird = allThird.slice(0, 8).map(t => t.team)
+    const bestThird = allThird.slice(0, 8)
 
-    // Exact 32强 bracket (2026 FIFA World Cup format)
-    // Slots: X1=group winner, X2=runner-up, 3rd:N=Nth best third-placed
-    const R32_MATCHES: [string, string][] = [
-      ['A2', 'B2'],                                       // 赛事73
-      ['E1', bestThird[0] ? bestThird[0].teamId : ''],    // 赛事74: E1 vs 3rd
-      ['F1', 'C2'],                                        // 赛事75
-      ['C1', 'F2'],                                        // 赛事76
-      ['I1', bestThird[1] ? bestThird[1].teamId : ''],    // 赛事77: I1 vs 3rd
-      ['E2', 'I2'],                                        // 赛事78
-      ['A1', bestThird[2] ? bestThird[2].teamId : ''],    // 赛事79: A1 vs 3rd
-      ['L1', bestThird[3] ? bestThird[3].teamId : ''],    // 赛事80: L1 vs 3rd
-      ['D1', bestThird[4] ? bestThird[4].teamId : ''],    // 赛事81: D1 vs 3rd
-      ['G1', bestThird[5] ? bestThird[5].teamId : ''],    // 赛事82: G1 vs 3rd
-      ['K2', 'L2'],                                        // 赛事83
-      ['H1', 'J2'],                                        // 赛事84
-      ['B1', bestThird[6] ? bestThird[6].teamId : ''],    // 赛事85: B1 vs 3rd
-      ['J1', 'H2'],                                        // 赛事86
-      ['K1', bestThird[7] ? bestThird[7].teamId : ''],    // 赛事87: K1 vs 3rd
-      ['D2', 'G2'],                                        // 赛事88
+    // Assign third-placed teams to slots based on group constraints
+    // Each slot has a list of allowed groups the 3rd-place team can come from
+    const thirdSlots: { matchIdx: number; allowedGroups: string[] }[] = [
+      { matchIdx: 74, allowedGroups: ['A','B','C','D','F'] },
+      { matchIdx: 77, allowedGroups: ['C','D','F','G','H'] },
+      { matchIdx: 79, allowedGroups: ['C','E','F','H','I'] },
+      { matchIdx: 80, allowedGroups: ['E','H','I','J','K'] },
+      { matchIdx: 81, allowedGroups: ['B','E','F','I','J'] },
+      { matchIdx: 82, allowedGroups: ['A','E','H','I','J'] },
+      { matchIdx: 85, allowedGroups: ['E','F','G','I','J'] },
+      { matchIdx: 87, allowedGroups: ['D','E','I','J','L'] },
     ]
 
-    // Resolve slots to actual teams
+    // Assign: for each slot (by match number order), pick the best available third-placed
+    // team whose group is in the allowed list
+    const assigned = new Map<number, TeamScores>() // matchIdx → team
+    const used = new Set<string>() // used teamIds
+    for (const { matchIdx, allowedGroups } of thirdSlots) {
+      for (const candidate of bestThird) {
+        if (used.has(candidate.team.teamId)) continue
+        if (allowedGroups.includes(candidate.team.group)) {
+          assigned.set(matchIdx, candidate.team)
+          used.add(candidate.team.teamId)
+          break
+        }
+      }
+    }
+
+    // Exact 32强 bracket (2026 FIFA World Cup format)
+    // Define each match by its home/away slot
+    const matchDefs: Record<number, [string, string]> = {
+      73: ['A2', 'B2'],
+      74: ['E1', assigned.get(74)?.teamId ?? ''],
+      75: ['F1', 'C2'],
+      76: ['C1', 'F2'],
+      77: ['I1', assigned.get(77)?.teamId ?? ''],
+      78: ['E2', 'I2'],
+      79: ['A1', assigned.get(79)?.teamId ?? ''],
+      80: ['L1', assigned.get(80)?.teamId ?? ''],
+      81: ['D1', assigned.get(81)?.teamId ?? ''],
+      82: ['G1', assigned.get(82)?.teamId ?? ''],
+      83: ['K2', 'L2'],
+      84: ['H1', 'J2'],
+      85: ['B1', assigned.get(85)?.teamId ?? ''],
+      86: ['J1', 'H2'],
+      87: ['K1', assigned.get(87)?.teamId ?? ''],
+      88: ['D2', 'G2'],
+    }
+
+    // Build bracket in order
     const resolveSlot = (slot: string): TeamScores | undefined => {
-      // "A1" / "B2" etc. → slotMap lookup
       if (/^[A-L][12]$/.test(slot)) return slotMap.get(slot)
-      // It's a teamId (third-placed)
       return scores.find(s => s.teamId === slot)
     }
 
     const r32: TeamScores[] = []
     const pairs: [TeamScores, TeamScores][] = []
-    for (const [homeSlot, awaySlot] of R32_MATCHES) {
+    for (let m = 73; m <= 88; m++) {
+      const def = matchDefs[m]
+      if (!def) continue
+      const [homeSlot, awaySlot] = def
       const home = resolveSlot(homeSlot)
       const away = resolveSlot(awaySlot)
       if (home) r32.push(home)
