@@ -48,27 +48,49 @@ export function BracketView({ scores, standings }: Props) {
       }
     }
 
+    // Sort each tier by standings pts
+    const byPts = (t: TeamScores) => standings.get(t.group)?.find(s => s.teamId === t.teamId)?.pts ?? 0
+
+    groupWinners.sort((a, b) => byPts(b) - byPts(a))
+    runnersUp.sort((a, b) => byPts(b) - byPts(a))
     // Top 8 third-placed teams (by standings pts)
-    thirdPlace.sort((a, b) => {
-      const aSt = standings.get(a.group)?.find(s => s.teamId === a.teamId)
-      const bSt = standings.get(b.group)?.find(s => s.teamId === b.teamId)
-      return (bSt?.pts ?? 0) - (aSt?.pts ?? 0)
-    })
+    thirdPlace.sort((a, b) => byPts(b) - byPts(a))
     const bestThird = thirdPlace.slice(0, 8)
 
-    // Seed 32: group winners + runners-up + best thirds
-    const all32: TeamScores[] = [...groupWinners, ...runnersUp, ...bestThird]
+    // Realistic Round of 32 bracket:
+    //   Tier A (best 8 group winners) vs Tier C (8 third-placed)
+    //   Tier B (remaining 4 group winners) vs best 4 runners-up
+    //   Tier D (remaining 8 runners-up) paired against each other
+    const tierA = groupWinners.slice(0, 8)       // top 8 winners
+    const tierB = groupWinners.slice(8)           // bottom 4 winners
+    const tierC = bestThird                       // 8 third-placed
+    const tierD = runnersUp.slice(4)              // bottom 8 runners-up (after removing top 4)
 
-    // Sort by comprehensive strength (total) for balanced bracket pairing
-    const sorted = [...all32].sort((a, b) => b.total - a.total)
-    const pairs: [TeamScores, TeamScores][] = []
-    for (let i = 0; i < sorted.length; i += 2) {
-      if (i + 1 < sorted.length) {
-        pairs.push([sorted[i], sorted[i + 1]])
-      }
+    // Build round of 32 in bracket order
+    const r32: TeamScores[] = []
+    // Matches 1-8: winner vs third
+    for (let i = 0; i < 8; i++) {
+      if (tierA[i]) r32.push(tierA[i])
+      if (tierC[i]) r32.push(tierC[i])
+    }
+    // Matches 9-12: remaining winners vs top runners-up
+    for (let i = 0; i < 4; i++) {
+      if (tierB[i]) r32.push(tierB[i])
+      if (runnersUp[i]) r32.push(runnersUp[i])
+    }
+    // Matches 13-16: remaining runners-up vs each other
+    for (let i = 0; i < 8; i += 2) {
+      if (tierD[i]) r32.push(tierD[i])
+      if (tierD[i + 1]) r32.push(tierD[i + 1])
     }
 
-    return { sorted, pairs }
+    // Create pairs for display
+    const pairs: [TeamScores, TeamScores][] = []
+    for (let i = 0; i < r32.length; i += 2) {
+      if (i + 1 < r32.length) pairs.push([r32[i], r32[i + 1]])
+    }
+
+    return { sorted: r32, pairs }
   }, [scores, standings])
 
   const roundName = (round: number) => {
