@@ -24,70 +24,73 @@ export function BracketView({ scores, standings }: Props) {
       groups.get(s.group)!.push(s)
     }
 
-    const groupWinners: TeamScores[] = []
-    const runnersUp: TeamScores[] = []
-    const thirdPlace: TeamScores[] = []
-
+    // Build per-group standings: [1st, 2nd, 3rd, 4th] by standings order
+    const groupRanked = new Map<string, TeamScores[]>()
     for (const [g, gTeams] of groups) {
       const groupSt = standings.get(g)
       if (groupSt) {
-        // Use standings order (actualPts → predPts → GD → GF)
         const rankMap = new Map(groupSt.map((s, i) => [s.teamId, i]))
         const sorted = [...gTeams].sort(
           (a, b) => (rankMap.get(a.teamId) ?? 99) - (rankMap.get(b.teamId) ?? 99)
         )
-        if (sorted[0]) groupWinners.push(sorted[0])
-        if (sorted[1]) runnersUp.push(sorted[1])
-        if (sorted[2]) thirdPlace.push(sorted[2])
+        groupRanked.set(g, sorted)
       } else {
-        // Fallback: sort by total
-        const sorted = [...gTeams].sort((a, b) => b.total - a.total)
-        if (sorted[0]) groupWinners.push(sorted[0])
-        if (sorted[1]) runnersUp.push(sorted[1])
-        if (sorted[2]) thirdPlace.push(sorted[2])
+        groupRanked.set(g, [...gTeams].sort((a, b) => b.total - a.total))
       }
     }
 
-    // Sort each tier by standings pts
-    const byPts = (t: TeamScores) => standings.get(t.group)?.find(s => s.teamId === t.teamId)?.pts ?? 0
+    // Slot lookup: "A1" → group A winner, "A2" → runner-up, etc.
+    const slotMap = new Map<string, TeamScores>()
+    const allThird: { team: TeamScores; pts: number }[] = []
+    for (const [g, ranked] of groupRanked) {
+      if (ranked[0]) slotMap.set(`${g}1`, ranked[0])
+      if (ranked[1]) slotMap.set(`${g}2`, ranked[1])
+      if (ranked[2]) {
+        const pts = standings.get(g)?.find(s => s.teamId === ranked[2].teamId)?.pts ?? 0
+        allThird.push({ team: ranked[2], pts })
+      }
+    }
+    // Best 8 third-placed teams by pts
+    allThird.sort((a, b) => b.pts - a.pts)
+    const bestThird = allThird.slice(0, 8).map(t => t.team)
 
-    groupWinners.sort((a, b) => byPts(b) - byPts(a))
-    runnersUp.sort((a, b) => byPts(b) - byPts(a))
-    // Top 8 third-placed teams (by standings pts)
-    thirdPlace.sort((a, b) => byPts(b) - byPts(a))
-    const bestThird = thirdPlace.slice(0, 8)
+    // Exact 32强 bracket (2026 FIFA World Cup format)
+    // Slots: X1=group winner, X2=runner-up, 3rd:N=Nth best third-placed
+    const R32_MATCHES: [string, string][] = [
+      ['A2', 'B2'],                                       // 赛事73
+      ['E1', bestThird[0] ? bestThird[0].teamId : ''],    // 赛事74: E1 vs 3rd
+      ['F1', 'C2'],                                        // 赛事75
+      ['C1', 'F2'],                                        // 赛事76
+      ['I1', bestThird[1] ? bestThird[1].teamId : ''],    // 赛事77: I1 vs 3rd
+      ['E2', 'I2'],                                        // 赛事78
+      ['A1', bestThird[2] ? bestThird[2].teamId : ''],    // 赛事79: A1 vs 3rd
+      ['L1', bestThird[3] ? bestThird[3].teamId : ''],    // 赛事80: L1 vs 3rd
+      ['D1', bestThird[4] ? bestThird[4].teamId : ''],    // 赛事81: D1 vs 3rd
+      ['G1', bestThird[5] ? bestThird[5].teamId : ''],    // 赛事82: G1 vs 3rd
+      ['K2', 'L2'],                                        // 赛事83
+      ['H1', 'J2'],                                        // 赛事84
+      ['B1', bestThird[6] ? bestThird[6].teamId : ''],    // 赛事85: B1 vs 3rd
+      ['J1', 'H2'],                                        // 赛事86
+      ['K1', bestThird[7] ? bestThird[7].teamId : ''],    // 赛事87: K1 vs 3rd
+      ['D2', 'G2'],                                        // 赛事88
+    ]
 
-    // Realistic Round of 32 bracket:
-    //   Tier A (best 8 group winners) vs Tier C (8 third-placed)
-    //   Tier B (remaining 4 group winners) vs best 4 runners-up
-    //   Tier D (remaining 8 runners-up) paired against each other
-    const tierA = groupWinners.slice(0, 8)       // top 8 winners
-    const tierB = groupWinners.slice(8)           // bottom 4 winners
-    const tierC = bestThird                       // 8 third-placed
-    const tierD = runnersUp.slice(4)              // bottom 8 runners-up (after removing top 4)
+    // Resolve slots to actual teams
+    const resolveSlot = (slot: string): TeamScores | undefined => {
+      // "A1" / "B2" etc. → slotMap lookup
+      if (/^[A-L][12]$/.test(slot)) return slotMap.get(slot)
+      // It's a teamId (third-placed)
+      return scores.find(s => s.teamId === slot)
+    }
 
-    // Build round of 32 in bracket order
     const r32: TeamScores[] = []
-    // Matches 1-8: winner vs third
-    for (let i = 0; i < 8; i++) {
-      if (tierA[i]) r32.push(tierA[i])
-      if (tierC[i]) r32.push(tierC[i])
-    }
-    // Matches 9-12: remaining winners vs top runners-up
-    for (let i = 0; i < 4; i++) {
-      if (tierB[i]) r32.push(tierB[i])
-      if (runnersUp[i]) r32.push(runnersUp[i])
-    }
-    // Matches 13-16: remaining runners-up vs each other
-    for (let i = 0; i < 8; i += 2) {
-      if (tierD[i]) r32.push(tierD[i])
-      if (tierD[i + 1]) r32.push(tierD[i + 1])
-    }
-
-    // Create pairs for display
     const pairs: [TeamScores, TeamScores][] = []
-    for (let i = 0; i < r32.length; i += 2) {
-      if (i + 1 < r32.length) pairs.push([r32[i], r32[i + 1]])
+    for (const [homeSlot, awaySlot] of R32_MATCHES) {
+      const home = resolveSlot(homeSlot)
+      const away = resolveSlot(awaySlot)
+      if (home) r32.push(home)
+      if (away) r32.push(away)
+      if (home && away) pairs.push([home, away])
     }
 
     return { sorted: r32, pairs }
