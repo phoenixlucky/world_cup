@@ -23,10 +23,19 @@ export function GroupView({ scores, standings }: Props) {
   const groups = useMemo(() => {
     const map = new Map<string, TeamScores[]>()
     for (const g of groupNames) {
-      map.set(g, scores.filter(s => s.group === g).sort((a, b) => b.total - a.total))
+      const groupScores = scores.filter(s => s.group === g)
+      // Sort by standings order (actualPts → predPts → GD → GF)
+      const st = standings.get(g)
+      if (st) {
+        const rankMap = new Map(st.map((s, i) => [s.teamId, i]))
+        groupScores.sort((a, b) => (rankMap.get(a.teamId) ?? 99) - (rankMap.get(b.teamId) ?? 99))
+      } else {
+        groupScores.sort((a, b) => b.total - a.total)
+      }
+      map.set(g, groupScores)
     }
     return map
-  }, [scores])
+  }, [scores, standings])
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

@@ -123,9 +123,10 @@ export function computeGroupStandings(
     s.gd = s.gf - s.ga
   }
 
-  // Sort by pts → GD → GF
+  // Sort by actualPts → predPts → GD → GF
   return Array.from(standings.values()).sort((a, b) => {
-    if (b.pts !== a.pts) return b.pts - a.pts
+    if (b.actualPts !== a.actualPts) return b.actualPts - a.actualPts
+    if (b.predPts !== a.predPts) return b.predPts - a.predPts
     if (b.gd !== a.gd) return b.gd - a.gd
     return b.gf - a.gf
   })
