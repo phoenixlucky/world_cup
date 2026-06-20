@@ -538,6 +538,7 @@ export function ScheduleView() {
   const [filterRound, setFilterRound] = useState<string>('all')
   const [filterGroup, setFilterGroup] = useState<string>('all')
   const [filterVenue, setFilterVenue] = useState<string>('all')
+  const [filterTeam, setFilterTeam] = useState<string>('all')
 
   const [liveScores, setLiveScores] = useState<Record<string, string>>(() => {
     try {
@@ -613,9 +614,10 @@ export function ScheduleView() {
       if (filterRound !== 'all' && m.round !== filterRound) return false
       if (filterGroup !== 'all' && m.group !== filterGroup) return false
       if (filterVenue !== 'all' && m.venue !== filterVenue) return false
+      if (filterTeam !== 'all' && m.home !== filterTeam && m.away !== filterTeam) return false
       return true
     })
-  }, [filterRound, filterGroup, filterVenue])
+  }, [filterRound, filterGroup, filterVenue, filterTeam])
 
   const byDate = useMemo(() => {
     const map = new Map<string, Match[]>()
@@ -655,6 +657,13 @@ export function ScheduleView() {
           className="bg-slate-700 text-white text-sm rounded-lg px-3 py-2 border border-slate-600">
           <option value="all">全部场地</option>
           {allVenueKeys.map(v => <option key={v} value={v}>{v}</option>)}
+        </select>
+        <select value={filterTeam} onChange={e => setFilterTeam(e.target.value)}
+          className="bg-slate-700 text-white text-sm rounded-lg px-3 py-2 border border-slate-600 max-w-[14rem]">
+          <option value="all">全部球队</option>
+          {[...teams].sort((a, b) => a.nameCN.localeCompare(b.nameCN, 'zh')).map(t =>
+            <option key={t.id} value={t.id}>{t.flag} {t.nameCN}（{t.group}组）</option>
+          )}
         </select>
         <span className="text-sm text-slate-400 self-center ml-auto">
           共 {filtered.length} 场
