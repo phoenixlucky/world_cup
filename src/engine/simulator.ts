@@ -113,8 +113,11 @@ function simulateKnockout(home: TeamScores, away: TeamScores): { winner: string 
     return { winner: hG > aG ? home.teamId : away.teamId }
   }
 
-  // Extra time / penalties: slight randomness
-  return { winner: Math.random() < 0.5 ? home.teamId : away.teamId }
+  // Extra time / penalties: weighted by team strength
+  // Stronger teams have higher probability of winning on penalties
+  const totalStrength = home.total + away.total
+  const homePenaltyProb = totalStrength > 0 ? home.total / totalStrength : 0.5
+  return { winner: Math.random() < homePenaltyProb ? home.teamId : away.teamId }
 }
 
 /** Get the lookup map from teamId → TeamScores */

@@ -102,31 +102,43 @@ function normalise(values: number[], key: NumericKey): number[] {
   })
 }
 
-/** Recent form string → numeric score (0-100) */
+/** Recent form string → numeric score (0-100) with exponential decay.
+ *  Recent matches are weighted more heavily.
+ *  "W"=3, "D"=1, "L"=0, decay factor 0.85 per match. */
 function formScore(form: string): number {
-  const points = form
-    .toUpperCase()
-    .split('')
-    .reduce((sum, ch) => {
-      if (ch === 'W') return sum + 3
-      if (ch === 'D') return sum + 1
-      return sum
-    }, 0)
-  return (points / (form.length * 3)) * 100
+  const chars = form.toUpperCase().split('')
+  let totalWeight = 0
+  let weightedPoints = 0
+
+  for (let i = 0; i < chars.length; i++) {
+    const weight = Math.pow(0.85, chars.length - 1 - i) // last match = weight 1.0
+    const ch = chars[i]
+    if (ch === 'W') weightedPoints += 3 * weight
+    else if (ch === 'D') weightedPoints += 1 * weight
+    // 'L' contributes 0
+    totalWeight += weight
+  }
+
+  return (weightedPoints / (totalWeight * 3)) * 100
 }
 
-/** Compute luck score: deterministic base + random jitter */
-function luckScore(teamId: string): number {
-  // Deterministic component based on team id hash
-  let hash = 0
-  for (let i = 0; i < teamId.length; i++) {
-    hash = ((hash << 5) - hash) + teamId.charCodeAt(i)
-    hash |= 0
-  }
-  const base = Math.abs(hash % 20) + 40  // 40-60 base
-  // Random jitter ±10
-  const jitter = (Math.random() - 0.5) * 20
-  return Math.min(100, Math.max(0, base + jitter))
+/** Momentum score based on recent form trend.
+ *  Rewards teams on a hot streak, penalizes teams in a slump.
+ *  Replaces the old random-based "luck" — deterministic and predictive. */
+function momentumScore(form: string): number {
+  const chars = form.toUpperCase().split('').reverse() // most recent first
+  const last3 = chars.slice(0, 3)
+  const pts = last3.reduce((sum, ch) => {
+    if (ch === 'W') return sum + 3
+    if (ch === 'D') return sum + 1
+    return sum
+  }, 0)
+  // 0/9 → 30, 1-2/9 → 40, 3-4/9 → 50, 5-6/9 → 65, 7-9/9 → 80
+  if (pts >= 7) return 80
+  if (pts >= 5) return 65
+  if (pts >= 3) return 50
+  if (pts >= 1) return 40
+  return 30
 }
 
 /** Compute scores for all teams */
@@ -158,7 +170,16 @@ function computeScoresRaw(teams: Team[], weights: Weights): TeamScores[] {
   const mvRaw = teams.map(t => t.marketVal)
   const goalRatios = teams.map(t => t.goalsFor20 / (t.goalsFor20 + t.goalsAgainst20 || 1) * 100)
   const winRates = teams.map(t => (t.wins20 / Math.max(t.wins20 + t.losses20 + t.draws20, 1)) * 100)
-  const gdRaw = teams.map(t => (t.goalsFor20 - t.goalsAgainst20) / 20 * 10 + 50) // goal diff per game scaled
+  const adRaw = teams.map(t => {
+    const attackRate = t.goalsFor20 / 20       // goals scored per game
+    const defenseRate = t.goalsAgainst20 / 20   // goals conceded per game
+    // GD component (original formula)
+    const gdScore = (attackRate - defenseRate) * 10 + 50
+    // Defensive solidity component: invert GA so fewer conceded = higher score
+    const defScore = Math.max(0, 100 - defenseRate * 30)
+    // Blend: 60% GD + 40% defensive resilience
+    return gdScore * 0.6 + defScore * 0.4
+  })
   const osRaw = teams.map(t => (OPPONENT_STRENGTH[t.continent] ?? 1.0) * 100) // opponent strength
   const wcRaw = teams.map(t => t.worldCupPerf) // already 0-100
 
@@ -167,7 +188,7 @@ function computeScoresRaw(teams: Team[], weights: Weights): TeamScores[] {
   const mvNorm = normalise(mvRaw, 'marketVal')
   const goalNorm = normalise(goalRatios, 'goals')
   const winNorm = normalise(winRates, 'wins')
-  const adNorm = normalise(gdRaw, 'attackDefense')
+  const adNorm = normalise(adRaw, 'attackDefense')
   const osNorm = normalise(osRaw, 'opponentStrength')
   const wcNorm = normalise(wcRaw, 'worldCupPerf')
 
@@ -180,7 +201,7 @@ function computeScoresRaw(teams: Team[], weights: Weights): TeamScores[] {
 
   return teams.map((t, i) => {
     const fScore = formScore(t.recentForm)
-    const lScore = luckScore(t.id)
+    const lScore = momentumScore(t.recentForm)
     const hBonus = HOST_BONUS[t.continent] ?? 0
 
     const dim = {

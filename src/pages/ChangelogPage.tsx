@@ -21,6 +21,137 @@ interface Section {
 
 const changelog: ChangeEntry[] = [
   {
+    version: 'v2.0.2',
+    date: '2026-06-21',
+    title: '📐 评分维度重构 — 防守韧性 + 势头得分 + 加权点球',
+    sections: [
+      {
+        heading: '🎯 调整动机',
+        body: `
+          <p class="mb-2">小组赛 36 场完赛后，胜负平准确率 <strong>~63.9%</strong>（23/36），
+          但错误模式存在系统性偏差：</p>
+          <ol class="list-decimal list-inside space-y-1 text-sm mb-3">
+            <li><strong>弱旅防守韧性被低估</strong> —— 佛得角 0-0 西班牙、埃及 1-1 比利时、库拉索 0-0 厄瓜多尔</li>
+            <li><strong>纯随机运气维度（9%权重）</strong> —— luck 维度本质是 40-60 ± 10 的噪声，没有预测价值</li>
+            <li><strong>近期状态与远期状态等权</strong> —— 5 场比赛同等权重，球队 2 周前和 1 个月前状态同等重要</li>
+            <li><strong>淘汰赛点球 50/50 纯随机</strong> —— 强队在点球大战中实际胜率更高</li>
+          </ol>
+        `,
+      },
+      {
+        heading: '🔄 form 评分 — 指数时间衰减（scorer.ts）',
+        body: `
+          <p class="mb-2">原有公式将最近 5 场结果 <code>W/D/L</code> 等权求和，改为 <strong>0.85 指数衰减</strong>：</p>
+          <pre class="bg-slate-800 text-green-300 text-sm p-3 rounded mb-3 overflow-x-auto">
+    改前：W + W + D + L + W  → (3+3+1+0+3) / 15 = 66.7%
+    改后：W×0.52 + W×0.61 + D×0.72 + L×0.85 + W×1.0  → ~72%</pre>
+          <p class="text-xs text-slate-400 mb-2">注：0.85<sup>4</sup>=0.52、0.85<sup>3</sup>=0.61、…、0.85<sup>0</sup>=1.0</p>
+          <p>效果：最近一场的权重是 5 场前的 ~2 倍。连胜势头更灵敏，老旧战绩逐渐"褪色"。</p>
+        `,
+      },
+      {
+        heading: '🛡️ attackDefense — 防守韧性独立计分（scorer.ts）',
+        body: `
+          <p class="mb-2">原公式只取净胜球 <code>GD = 进球 - 失球</code>，防守坚韧但进攻一般的球队被低估。
+          改为 <strong>60% GD + 40% 防守韧性</strong> 复合指标：</p>
+          <table class="w-full text-sm mb-3">
+            <thead>
+              <tr class="border-b border-slate-600">
+                <th class="text-left py-1 pr-4">球队</th>
+                <th class="text-right py-1 pr-4">GF/GA</th>
+                <th class="text-right py-1 pr-4">旧 GD 分</th>
+                <th class="text-right py-1 pl-4">新复合分</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-slate-700">
+                <td class="py-1 pr-4 text-blue-300">巴西</td>
+                <td class="text-right py-1 pr-4 font-mono">38/14</td>
+                <td class="text-right py-1 pr-4 font-mono">62.0</td>
+                <td class="text-right py-1 pl-4 font-mono text-green-400">68.8</td>
+              </tr>
+              <tr class="border-b border-slate-700">
+                <td class="py-1 pr-4 text-yellow-300">埃及</td>
+                <td class="text-right py-1 pr-4 font-mono">22/20</td>
+                <td class="text-right py-1 pr-4 font-mono">51.0</td>
+                <td class="text-right py-1 pl-4 font-mono text-green-400">58.6</td>
+              </tr>
+              <tr class="border-b border-slate-700">
+                <td class="py-1 pr-4 text-orange-300">佛得角</td>
+                <td class="text-right py-1 pr-4 font-mono">18/25</td>
+                <td class="text-right py-1 pr-4 font-mono">46.5</td>
+                <td class="text-right py-1 pl-4 font-mono text-green-400">52.9</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>防守越好的球队（每场失球越少）获得额外加分，修正了"攻强守弱 = 攻守平衡"的系统性偏差。</p>
+        `,
+      },
+      {
+        heading: '🍀 luck → momentum 势头得分（scorer.ts）',
+        body: `
+          <p class="mb-2">原有 luck 维度是一个 <strong>40-60 ± 10 的纯随机数</strong>，
+          权重 9% 却毫无预测能力。改为 <strong>近期势头得分</strong>：</p>
+          <table class="w-full text-sm mb-3">
+            <thead>
+              <tr class="border-b border-slate-600">
+                <th class="text-left py-1 pr-4">近3场得分</th>
+                <th class="text-right py-1 pr-4">势头分</th>
+                <th class="text-right py-1 pl-4">示例球队</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-slate-700">
+                <td class="py-1 pr-4 font-mono">7～9 分（3连胜）</td>
+                <td class="text-right py-1 pr-4 font-mono text-green-400">80</td>
+                <td class="py-1 pl-4">巴西 WWWDL</td>
+              </tr>
+              <tr class="border-b border-slate-700">
+                <td class="py-1 pr-4 font-mono">5～6 分</td>
+                <td class="text-right py-1 pr-4 font-mono text-yellow-400">65</td>
+                <td class="py-1 pl-4">美国 WWWDL</td>
+              </tr>
+              <tr class="border-b border-slate-700">
+                <td class="py-1 pr-4 font-mono">3～4 分</td>
+                <td class="text-right py-1 pr-4 font-mono">50</td>
+                <td class="py-1 pl-4">埃及 WDWLD</td>
+              </tr>
+              <tr class="border-b border-slate-700">
+                <td class="py-1 pr-4 font-mono">0 分（3连败）</td>
+                <td class="text-right py-1 pr-4 font-mono text-red-400">30</td>
+                <td class="py-1 pl-4">库拉索 LDLLD</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>确定性、可复现、且捕捉了"连胜/连败势头"这一真实预测信号。权重名称在 UI 中仍显示为"运气"，但底层已改为势头计算。</p>
+        `,
+      },
+      {
+        heading: '⚖️ 淘汰赛加权点球（simulator.ts）',
+        body: `
+          <p class="mb-2">淘汰赛平局后点球决胜从 <strong>50/50 公平抛硬币</strong> 改为
+          <strong>基于球队综合实力的加权概率</strong>：</p>
+          <pre class="bg-slate-800 text-green-300 text-sm p-3 rounded mb-3 overflow-x-auto">
+    改前：winner = Math.random() &lt; 0.5 ? home : away       ← 纯随机
+    改后：prob = home.total / (home.total + away.total)     ← 实力比加权
+          winner = Math.random() &lt; prob ? home : away</pre>
+          <p>例如总评分 70 vs 30 的球队有 <strong>70% 概率赢得点球大战</strong>，更贴近真实足球中强队点球胜率更高的统计规律。Monte Carlo 模拟中强弱队的晋级概率差异更合理。</p>
+        `,
+      },
+      {
+        heading: '📊 预期影响',
+        body: `
+          <ul class="list-disc list-inside space-y-1 text-sm">
+            <li><strong>防守型球队</strong>（埃及、佛得角、库拉索）评分上升，爆冷预测概率增加</li>
+            <li><strong>连胜球队</strong> 势头加分，淘汰赛模拟中"状态型"球队晋级概率合理提升</li>
+            <li><strong>淘汰赛模拟</strong> 强弱分布更符合足球现实：强队点球不再看天吃饭</li>
+            <li><strong>已赛比赛预测不变</strong>（已封存在 <code>FROZEN_PREDICTIONS</code> 中）</li>
+          </ul>
+        `,
+      },
+    ],
+  },
+  {
     version: 'v2.0.1',
     date: '2025-06-15',
     title: '📉 权重调优 + 泊松比率阻尼 — 抑制极端预测',
