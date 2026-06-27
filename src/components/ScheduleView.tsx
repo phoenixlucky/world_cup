@@ -795,8 +795,8 @@ export function ScheduleView() {
                     } catch {}
                   }
                   if (!predStr) {
-                    const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
-                    predStr = `${ph}-${pa}`
+                    const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
+                    predStr = `${sp.score[0]}-${sp.score[1]}`
                   }
                   scoreContent = (
                     <div className="flex flex-col items-center">
