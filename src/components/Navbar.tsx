@@ -14,6 +14,7 @@ const links = [
   { to: '/accuracy', label: '📊 准确性', title: '预测准确性统计' },
   { to: '/changelog', label: '📜 更新日志', title: '算法更新记录' },
   { to: '/world-cup-perf', label: '🏅 世界杯表现', title: '各队表现评分' },
+  { to: '/third-place', label: '🥉 小组第三', title: '小组第三排行榜' },
 ]
 
 export function Navbar() {
