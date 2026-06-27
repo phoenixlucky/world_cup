@@ -37,6 +37,24 @@ export function GroupView({ scores, standings }: Props) {
     return map
   }, [scores, standings])
 
+  // Compute which third-place teams are in the top 8 across all groups
+  const advancingThirdPlace = useMemo(() => {
+    const thirds: { teamId: string; pts: number; gd: number; gf: number }[] = []
+    for (const g of groupNames) {
+      const st = standings.get(g)
+      if (st && st.length >= 3) {
+        const t = st[2]
+        thirds.push({ teamId: t.teamId, pts: t.pts, gd: t.gd, gf: t.gf })
+      }
+    }
+    thirds.sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts
+      if (b.gd !== a.gd) return b.gd - a.gd
+      return b.gf - a.gf
+    })
+    return new Set(thirds.slice(0, 8).map(t => t.teamId))
+  }, [standings])
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {groupNames.map(g => {
@@ -115,7 +133,12 @@ export function GroupView({ scores, standings }: Props) {
                           晋级
                         </span>
                       )}
-                      {thirdBest && (
+                      {thirdBest && advancingThirdPlace.has(t.teamId) && (
+                        <span className="text-green-400 text-xs bg-green-400/10 px-1.5 py-0.5 rounded">
+                          晋级
+                        </span>
+                      )}
+                      {thirdBest && !advancingThirdPlace.has(t.teamId) && (
                         <span className="text-yellow-400 text-xs bg-yellow-400/10 px-1.5 py-0.5 rounded">
                           待定
                         </span>
