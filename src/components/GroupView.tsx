@@ -77,12 +77,13 @@ export function GroupView({ scores, standings }: Props) {
               {teams.map((t, i) => {
                 const qualified = i < 2
                 const thirdBest = i === 2
+                const eliminated = i >= 2
 
                 return (
                   <div
                     key={t.teamId}
                     className={`px-4 py-3 flex items-center justify-between transition-colors ${
-                      qualified ? 'bg-green-900/10' : ''
+                      qualified ? 'bg-green-900/10' : eliminated ? 'bg-red-900/10' : ''
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -139,8 +140,13 @@ export function GroupView({ scores, standings }: Props) {
                         </span>
                       )}
                       {thirdBest && !advancingThirdPlace.has(t.teamId) && (
-                        <span className="text-yellow-400 text-xs bg-yellow-400/10 px-1.5 py-0.5 rounded">
-                          待定
+                        <span className="text-red-400 text-xs bg-red-400/10 px-1.5 py-0.5 rounded">
+                          淘汰
+                        </span>
+                      )}
+                      {eliminated && !thirdBest && (
+                        <span className="text-red-400 text-xs bg-red-400/10 px-1.5 py-0.5 rounded">
+                          淘汰
                         </span>
                       )}
                     </div>
