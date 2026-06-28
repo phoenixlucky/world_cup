@@ -14,7 +14,7 @@ import { teams, groupNames } from '../data/teams'
 import { computeScores, DEFAULT_WEIGHTS, type TeamScores } from '../engine/scorer'
 import { predictMostLikelyScore, predictScoreProbs, predictFullKnockoutResult } from '../engine/poisson'
 import { computeAllStandings } from '../engine/standings'
-import { LIVE_SCORES, FROZEN_PREDICTIONS, MATCH_NOTES, modelTag } from '../data/results'
+import { LIVE_SCORES, FROZEN_PREDICTIONS, MATCH_NOTES, modelTag, KNOCKOUT_PREDICTIONS, knockoutModelTag } from '../data/results'
 import { FlagImg } from './FlagImg'
 
 // ── Types ──────────────────────────────────────────────────
@@ -963,6 +963,12 @@ export function ScheduleView() {
                   }
                   if (!predStr) {
                     if (isKnockout) {
+                      // Use frozen 尉缭子分析法 prediction if available
+                      predStr = KNOCKOUT_PREDICTIONS[m.id] || ''
+                    }
+                  }
+                  if (!predStr) {
+                    if (isKnockout) {
                       const kr = predictFullKnockoutResult(
                         teamScoreMap.get(home.id) || 50,
                         teamScoreMap.get(away.id) || 50,
@@ -974,6 +980,8 @@ export function ScheduleView() {
                       predStr = `${sp.score[0]}-${sp.score[1]}`
                     }
                   }
+
+                  const koTag = isKnockout ? knockoutModelTag(m.id) : ''
 
                   if (isKnockout) {
                     // Knockout display — show all three stages
@@ -1001,6 +1009,9 @@ export function ScheduleView() {
                           {homeWon ? home.nameCN : away.nameCN} 晋级
                           {kr.hasPenalties ? ' (点球)' : kr.hasExtraTime ? ' (加时)' : ''}
                         </span>
+                        {koTag && (
+                          <span className="text-[9px] text-purple-400/70 font-medium mt-0.5">{koTag}推出</span>
+                        )}
                       </div>
                     )
                   } else {

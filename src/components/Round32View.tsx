@@ -11,6 +11,7 @@ import { useMemo } from 'react'
 import type { TeamScores } from '../engine/scorer'
 import type { GroupStanding } from '../engine/standings'
 import { predictFullKnockoutResult } from '../engine/poisson'
+import { KNOCKOUT_PREDICTIONS, knockoutModelTag } from '../data/results'
 
 import { FlagImg } from './FlagImg'
 
@@ -159,6 +160,11 @@ export function Round32View({ scores, standings }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {matches.map(m => {
           const vi = venueMap[m.venueKey]
+          const r32Key = `r32-${m.id - 73}`
+          const frozenPred = KNOCKOUT_PREDICTIONS[r32Key]
+          const tag = knockoutModelTag(r32Key)
+
+          // Use live prediction engine only for display breakdown (scores match frozen)
           const kr = predictFullKnockoutResult(m.home.total, m.away.total)
           const [rH, rA] = kr.regular
           const homeWon = kr.winner === 'home'
@@ -200,6 +206,11 @@ export function Round32View({ scores, standings }: Props) {
                   {kr.hasPenalties && kr.penalties && (
                     <span className="block text-[10px] text-yellow-400 font-mono leading-tight">
                       点球 {kr.penalties[0]}-{kr.penalties[1]}
+                    </span>
+                  )}
+                  {tag && (
+                    <span className="block text-[9px] text-purple-400/70 font-medium leading-tight mt-0.5">
+                      {tag}
                     </span>
                   )}
                 </div>
