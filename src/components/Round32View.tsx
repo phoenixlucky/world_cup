@@ -11,8 +11,7 @@ import { useMemo } from 'react'
 import type { TeamScores } from '../engine/scorer'
 import type { GroupStanding } from '../engine/standings'
 import { predictMostLikelyScore } from '../engine/poisson'
-import { computeScores, DEFAULT_WEIGHTS } from '../engine/scorer'
-import { teams } from '../data/teams'
+
 import { FlagImg } from './FlagImg'
 
 interface Props {
@@ -144,15 +143,6 @@ export function Round32View({ scores, standings }: Props) {
 
     return result
   }, [scores, standings])
-
-  // ── Predictions ───────────────────────────────────────────
-  const teamScoreMap = useMemo(() => {
-    const sc = computeScores(teams, DEFAULT_WEIGHTS)
-    const map = new Map<string, number>()
-    for (const s of sc) map.set(s.teamId, s.total)
-    return map
-  }, [])
-
   if (matches.length === 0) {
     return (
       <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-8 text-center">
