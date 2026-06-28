@@ -11,7 +11,7 @@ import { useMemo } from 'react'
 import type { TeamScores } from '../engine/scorer'
 import type { GroupStanding } from '../engine/standings'
 import { predictFullKnockoutResult } from '../engine/poisson'
-import { KNOCKOUT_PREDICTIONS, knockoutModelTag } from '../data/results'
+import { knockoutModelTag } from '../data/results'
 
 import { FlagImg } from './FlagImg'
 
@@ -161,7 +161,6 @@ export function Round32View({ scores, standings }: Props) {
         {matches.map(m => {
           const vi = venueMap[m.venueKey]
           const r32Key = `r32-${m.id - 73}`
-          const frozenPred = KNOCKOUT_PREDICTIONS[r32Key]
           const tag = knockoutModelTag(r32Key)
 
           // Use live prediction engine only for display breakdown (scores match frozen)
