@@ -11,8 +11,9 @@
  */
 import { useState, useMemo, useCallback, useEffect, type ReactNode } from 'react'
 import { teams, groupNames } from '../data/teams'
-import { computeScores, DEFAULT_WEIGHTS } from '../engine/scorer'
+import { computeScores, DEFAULT_WEIGHTS, type TeamScores } from '../engine/scorer'
 import { predictMostLikelyScore, predictScoreProbs } from '../engine/poisson'
+import { computeAllStandings } from '../engine/standings'
 import { LIVE_SCORES, FROZEN_PREDICTIONS, MATCH_NOTES, modelTag } from '../data/results'
 import { FlagImg } from './FlagImg'
 
@@ -558,6 +559,101 @@ export function ScheduleView() {
 
   const teamMap = useMemo(() => new Map(teams.map(t => [t.id, t])), [])
 
+  // ── Resolve 32强 actual team matchups from standings ─────
+  const r32TeamIds = useMemo(() => {
+    // Compute scores + standings (same weights as teamScoreMap)
+    const sc = computeScores(teams, DEFAULT_WEIGHTS)
+    let liveScores: Record<string, string> = {}
+    try {
+      liveScores = JSON.parse(localStorage.getItem('wc26-scores') || '{}')
+    } catch {}
+    liveScores = { ...LIVE_SCORES, ...liveScores }
+    const standings = computeAllStandings(sc, liveScores)
+
+    // Bracket resolution (same logic as Round32View / BracketView)
+    const groups = new Map<string, TeamScores[]>()
+    for (const s of sc) {
+      if (!groups.has(s.group)) groups.set(s.group, [])
+      groups.get(s.group)!.push(s)
+    }
+
+    const groupRanked = new Map<string, TeamScores[]>()
+    for (const [g, gTeams] of groups) {
+      const groupSt = standings.get(g)
+      if (groupSt) {
+        const rankMap = new Map(groupSt.map((s, i) => [s.teamId, i]))
+        const sorted = [...gTeams].sort(
+          (a, b) => (rankMap.get(a.teamId) ?? 99) - (rankMap.get(b.teamId) ?? 99),
+        )
+        groupRanked.set(g, sorted)
+      } else {
+        groupRanked.set(g, [...gTeams].sort((a, b) => b.total - a.total))
+      }
+    }
+
+    const slotMap = new Map<string, TeamScores>()
+    const allThird: { team: TeamScores; pts: number; gd: number; gf: number }[] = []
+    for (const [g, ranked] of groupRanked) {
+      if (ranked[0]) slotMap.set(`${g}1`, ranked[0])
+      if (ranked[1]) slotMap.set(`${g}2`, ranked[1])
+      if (ranked[2]) {
+        const st = standings.get(g)?.find(s => s.teamId === ranked[2].teamId)
+        allThird.push({ team: ranked[2], pts: st?.pts ?? 0, gd: st?.gd ?? 0, gf: st?.gf ?? 0 })
+      }
+    }
+
+    allThird.sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts
+      if (b.gd !== a.gd) return b.gd - a.gd
+      return b.gf - a.gf
+    })
+    const bestThird = allThird.slice(0, 8)
+
+    const thirdMatchOrder = [74, 77, 79, 80, 81, 82, 85, 87]
+    const assigned = new Map<number, TeamScores>()
+    for (let i = 0; i < Math.min(bestThird.length, 8); i++) {
+      assigned.set(thirdMatchOrder[i], bestThird[i].team)
+    }
+
+    const matchDefs: Record<number, [string, string]> = {
+      73: ['A2', 'B2'],
+      74: ['E1', assigned.get(74)?.teamId ?? ''],
+      75: ['F1', 'C2'],
+      76: ['C1', 'F2'],
+      77: ['I1', assigned.get(77)?.teamId ?? ''],
+      78: ['E2', 'I2'],
+      79: ['A1', assigned.get(79)?.teamId ?? ''],
+      80: ['L1', assigned.get(80)?.teamId ?? ''],
+      81: ['D1', assigned.get(81)?.teamId ?? ''],
+      82: ['G1', assigned.get(82)?.teamId ?? ''],
+      83: ['K2', 'L2'],
+      84: ['H1', 'J2'],
+      85: ['B1', assigned.get(85)?.teamId ?? ''],
+      86: ['J1', 'H2'],
+      87: ['K1', assigned.get(87)?.teamId ?? ''],
+      88: ['D2', 'G2'],
+    }
+
+    const resolveSlot = (slot: string): string | undefined => {
+      if (/^[A-L][12]$/.test(slot)) return slotMap.get(slot)?.teamId
+      return sc.find(s => s.teamId === slot)?.teamId
+    }
+
+    const result = new Map<string, { home: string; away: string }>()
+    let matchIndex = 0
+    for (let m = 73; m <= 88; m++) {
+      const def = matchDefs[m]
+      if (!def) continue
+      const [homeSlot, awaySlot] = def
+      const home = resolveSlot(homeSlot)
+      const away = resolveSlot(awaySlot)
+      if (!home || !away) continue
+      result.set(`r32-${matchIndex}`, { home, away })
+      matchIndex++
+    }
+    return result
+  }, [])
+
   // ── Frozen predictions for matches within 2 days ──────
   const [frozenPreds, setFrozenPreds] = useState<Record<string, string>>(getFrozenPredictions)
   const [frozenTs, setFrozenTs] = useState<string>(getFrozenTimestamp)
@@ -614,7 +710,12 @@ export function ScheduleView() {
       if (filterRound !== 'all' && m.round !== filterRound) return false
       if (filterGroup !== 'all' && m.group !== filterGroup) return false
       if (filterVenue !== 'all' && m.venue !== filterVenue) return false
-      if (filterTeam !== 'all' && m.home !== filterTeam && m.away !== filterTeam) return false
+      if (filterTeam !== 'all') {
+        const r32Pair = !m.home && !m.away && m.round === 'r32' ? r32TeamIds.get(m.id) : undefined
+        const h = r32Pair?.home ?? m.home
+        const a = r32Pair?.away ?? m.away
+        if (h !== filterTeam && a !== filterTeam) return false
+      }
       return true
     })
   }, [filterRound, filterGroup, filterVenue, filterTeam])
@@ -628,6 +729,11 @@ export function ScheduleView() {
       if (filterVenue !== 'all' && m.venue !== filterVenue) continue
       if (m.home) teamIds.add(m.home)
       if (m.away) teamIds.add(m.away)
+      // Include teams from resolved r32 matchups
+      if (!m.home && !m.away && m.round === 'r32') {
+        const p = r32TeamIds.get(m.id)
+        if (p) { teamIds.add(p.home); teamIds.add(p.away) }
+      }
     }
     // Always include the currently selected team even if filtered out
     if (filterTeam !== 'all') teamIds.add(filterTeam)
@@ -701,8 +807,10 @@ export function ScheduleView() {
             </div>
             <div className="divide-y divide-slate-700/50">
               {matches.map(m => {
-                const home = teamMap.get(m.home)
-                const away = teamMap.get(m.away)
+                // For knockout matches with blank teams, fill from resolved r32 bracket
+                const r32Pair = !m.home && !m.away && m.round === 'r32' ? r32TeamIds.get(m.id) : undefined
+                const home = teamMap.get(r32Pair?.home ?? m.home)
+                const away = teamMap.get(r32Pair?.away ?? m.away)
                 const past = isMatchPast(m.dateNum)
                 const bjTime = localToBeijing(m.date, m.localTime, m.utcOffset)
                 const storedScore = liveScores[m.id]
