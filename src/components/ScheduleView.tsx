@@ -338,9 +338,60 @@ function buildAllMatches(): Match[] {
     })
   }
 
-  // Knockout (dates/venues approximate — real pairings TBD)
+  // ── Round of 32 (actual FIFA schedule) ────────────────
+  const r32Schedule: { date: string; localTime: string; venueKey: string }[] = [
+    // Match 73: South Africa vs Canada — June 28, 12:00 UTC-7, SoFi Stadium
+    { date: '6月28日', localTime: '12:00', venueKey: 'SoFi体育场' },
+    // Match 76: Brazil vs Japan — June 29, 12:00 UTC-5, NRG Stadium
+    { date: '6月29日', localTime: '12:00', venueKey: 'NRG体育场' },
+    // Match 74: Germany vs Paraguay — June 29, 16:30 UTC-4, Gillette Stadium
+    { date: '6月29日', localTime: '16:30', venueKey: '吉列体育场' },
+    // Match 75: Netherlands vs Morocco — June 29, 19:00 UTC-6, Estadio BBVA
+    { date: '6月29日', localTime: '19:00', venueKey: 'BBVA体育场' },
+    // Match 78: Ivory Coast vs Norway — June 30, 12:00 UTC-5, AT&T Stadium
+    { date: '6月30日', localTime: '12:00', venueKey: 'AT&T体育场' },
+    // Match 77: France vs Sweden — June 30, 17:00 UTC-4, MetLife Stadium
+    { date: '6月30日', localTime: '17:00', venueKey: '大都会人寿体育场' },
+    // Match 79: Mexico vs Ecuador — June 30, 19:00 UTC-6, Estadio Azteca
+    { date: '6月30日', localTime: '19:00', venueKey: '阿兹特克体育场' },
+    // Match 80: England vs DR Congo — July 1, 12:00 UTC-4, Mercedes-Benz Stadium
+    { date: '7月1日', localTime: '12:00', venueKey: '梅赛德斯-宾士体育场' },
+    // Match 82: Belgium vs Senegal — July 1, 13:00 UTC-7, Lumen Field
+    { date: '7月1日', localTime: '13:00', venueKey: '流明球场' },
+    // Match 81: USA vs Bosnia — July 1, 17:00 UTC-7, Levi's Stadium
+    { date: '7月1日', localTime: '17:00', venueKey: '李维斯体育场' },
+    // Match 84: Spain vs Austria — July 2, 12:00 UTC-7, SoFi Stadium
+    { date: '7月2日', localTime: '12:00', venueKey: 'SoFi体育场' },
+    // Match 83: Portugal vs Croatia — July 2, 19:00 UTC-4, BMO Field
+    { date: '7月2日', localTime: '19:00', venueKey: 'BMO球场' },
+    // Match 85: Switzerland vs Algeria — July 2, 20:00 UTC-7, BC Place
+    { date: '7月2日', localTime: '20:00', venueKey: '卑诗体育馆' },
+    // Match 88: Australia vs Egypt — July 3, 13:00 UTC-5, AT&T Stadium
+    { date: '7月3日', localTime: '13:00', venueKey: 'AT&T体育场' },
+    // Match 86: Argentina vs Cape Verde — July 3, 18:00 UTC-4, Hard Rock Stadium
+    { date: '7月3日', localTime: '18:00', venueKey: '硬石体育场' },
+    // Match 87: Colombia vs Ghana — July 3, 20:30 UTC-5, Arrowhead Stadium
+    { date: '7月3日', localTime: '20:30', venueKey: '箭頭体育场' },
+  ]
+
+  for (let i = 0; i < r32Schedule.length; i++) {
+    const { date, localTime, venueKey } = r32Schedule[i]
+    const vi = venueMap[venueKey]
+    matches.push({
+      id: `r32-${i}`,
+      date,
+      dateNum: parseDateNum(date),
+      localTime,
+      utcOffset: vi.utcOffset,
+      home: '', away: '',
+      venue: vi.venue,
+      city: vi.city,
+      round: 'r32',
+    })
+  }
+
+  // ── Other knockout rounds (generic) ───────────────────
   const koSchedule: { round: Match['round']; dates: string[]; count: number }[] = [
-    { round: 'r32', dates: ['6月28日','6月29日','6月30日','7月1日'], count: 16 },
     { round: 'r16', dates: ['7月3日','7月4日','7月5日','7月6日'], count: 8 },
     { round: 'qf',  dates: ['7月9日','7月10日'], count: 4 },
     { round: 'sf',  dates: ['7月13日','7月14日'], count: 2 },
