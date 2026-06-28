@@ -61,6 +61,25 @@ export function expectedLambdas(
 }
 
 /**
+ * Expected lambdas for neutral‑venue matches (e.g. World Cup knockout).
+ * No home‑advantage multiplier — both teams are treated equally.
+ */
+export function neutralExpectedLambdas(
+  teamAStrength: number,
+  teamBStrength: number,
+): [number, number] {
+  const rawRatio = teamAStrength / Math.max(teamBStrength, 1)
+  const ratio = Math.sqrt(rawRatio)
+
+  const baseRate = 1.35
+
+  const teamALambda = Math.max(0.1, Math.min(6.0, baseRate * ratio))
+  const teamBLambda = Math.max(0.1, Math.min(6.0, baseRate / ratio))
+
+  return [teamALambda, teamBLambda]
+}
+
+/**
  * Generate a match score from independent Poisson distributions.
  * Returns [homeGoals, awayGoals] with each capped at 0-9.
  */
@@ -171,10 +190,13 @@ export function predictScoreProbs(
 /**
  * Full knockout match result: regular time → extra time → penalties.
  *
- * Models all three stages deterministically:
- * 1. **Regular time** (90 min): most likely Poisson score
- * 2. **Extra time** (30 min, only if regular time is a draw): reduced lambdas (fatigue)
- * 3. **Penalties** (only if still tied after extra time): strength-based shootout
+ * Uses outcome-consistent scoring at each stage:
+ * 1. Determine most likely OUTCOME (home win / draw / away win)
+ * 2. Within that outcome, pick the most likely score
+ * This avoids the "all 1-1" trap of raw most-likely-score.
+ *
+ * Extra time uses a fatigue factor (~0.45 of regular lambda).
+ * Penalties are strength-calibrated with realistic variance.
  */
 export interface KnockoutResult {
   /** Regular‑time score (90 min) */
@@ -195,45 +217,45 @@ export function predictFullKnockoutResult(
   homeStrength: number,
   awayStrength: number,
 ): KnockoutResult {
-  const regular = predictMostLikelyScore(homeStrength, awayStrength)
-  const [rH, rA] = regular
+  // ── Step 1: Regular time (90 min) — outcome-consistent, neutral venue ──
+  const rt = predictOutcomeConsistentScore(homeStrength, awayStrength, true)
+  const [rH, rA] = rt.score
 
-  // ── Case 1: settled in regular time ────────────────
-  if (rH !== rA) {
+  // Settled in regular time
+  if (rt.outcome !== 'draw') {
     return {
-      regular,
+      regular: rt.score,
       hasExtraTime: false,
       hasPenalties: false,
-      winner: rH > rA ? 'home' : 'away',
+      winner: rt.outcome === 'home' ? 'home' : 'away',
     }
   }
 
-  // ── Case 2: regular time is a draw → extra time ────
-  // Extra time lambdas: 30 min / 90 min × fatigue factor ≈ 0.33
-  const [hλ, aλ] = expectedLambdas(homeStrength, awayStrength)
-  const etFactor = 0.33
-  const etHome = predictMostLikelyScoreFromLambdas(hλ * etFactor, aλ * etFactor)
-  const [etH, etA] = etHome
-
+  // ── Step 2: Extra time (30 min) — fatigue-adjusted, neutral ─────
+  const [hλ, aλ] = neutralExpectedLambdas(homeStrength, awayStrength)
+  const etFactor = 0.45
+  const et = predictOutcomeConsistentFromLambdas(hλ * etFactor, aλ * etFactor)
+  const [etH, etA] = et.score
   const afterExtraTime: [number, number] = [rH + etH, rA + etA]
 
-  if (etH !== etA) {
+  // Settled in extra time
+  if (et.outcome !== 'draw') {
     return {
-      regular,
+      regular: rt.score,
       hasExtraTime: true,
       afterExtraTime,
       hasPenalties: false,
-      winner: etH > etA ? 'home' : 'away',
+      winner: et.outcome === 'home' ? 'home' : 'away',
     }
   }
 
-  // ── Case 3: still tied → penalties ─────────────────
+  // ── Step 3: Penalties ─────────────────────────────────
   const penalties = predictPenaltyScore(homeStrength, awayStrength)
   const [pH, pA] = penalties
   const winner: 'home' | 'away' = pH >= pA ? 'home' : 'away'
 
   return {
-    regular,
+    regular: rt.score,
     hasExtraTime: true,
     afterExtraTime,
     hasPenalties: true,
@@ -242,58 +264,138 @@ export function predictFullKnockoutResult(
   }
 }
 
-/** Predict the most likely score from pre‑computed lambdas (0‑4 range). */
-function predictMostLikelyScoreFromLambdas(
+/**
+ * Outcome-consistent score prediction.
+ *
+ * 1. Compute aggregate WDL probabilities
+ * 2. Pick the most likely outcome (home / draw / away)
+ * 3. Within that outcome, find the single most likely score
+ *
+ * This prevents "1-1 always wins" syndrome — even if 1-1 is the
+ * single most likely pair, if home win combined probability > draw,
+ * we pick the most likely home win score instead.
+ */
+interface OutcomeScore {
+  score: [number, number]
+  outcome: 'home' | 'draw' | 'away'
+}
+
+function predictOutcomeConsistentScore(
+  homeStrength: number,
+  awayStrength: number,
+  neutral?: boolean,
+): OutcomeScore {
+  const [hλ, aλ] = neutral
+    ? neutralExpectedLambdas(homeStrength, awayStrength)
+    : expectedLambdas(homeStrength, awayStrength)
+  return predictOutcomeConsistentFromLambdas(hλ, aλ)
+}
+
+function predictOutcomeConsistentFromLambdas(
   hλ: number,
   aλ: number,
-): [number, number] {
-  let bestProb = -1
-  let bestScore: [number, number] = [0, 0]
+): OutcomeScore {
+  let homeWin = 0, draw = 0, awayWin = 0
 
-  for (let h = 0; h <= 4; h++) {
-    for (let a = 0; a <= 4; a++) {
+  let bestHomeProb = -1, bestHomeScore: [number, number] = [0, 0]
+  let bestDrawProb = -1, bestDrawScore: [number, number] = [0, 0]
+  let bestAwayProb = -1, bestAwayScore: [number, number] = [0, 0]
+
+  // Iterate over realistic score range
+  const maxGoals = 5
+  for (let h = 0; h <= maxGoals; h++) {
+    for (let a = 0; a <= maxGoals; a++) {
       const prob = poissonPMF(h, hλ) * poissonPMF(a, aλ)
-      if (prob > bestProb) {
-        bestProb = prob
-        bestScore = [h, a]
+
+      if (h > a) {
+        homeWin += prob
+        if (prob > bestHomeProb) { bestHomeProb = prob; bestHomeScore = [h, a] }
+      } else if (h === a) {
+        draw += prob
+        if (prob > bestDrawProb) { bestDrawProb = prob; bestDrawScore = [h, a] }
+      } else {
+        awayWin += prob
+        if (prob > bestAwayProb) { bestAwayProb = prob; bestAwayScore = [h, a] }
       }
     }
   }
 
-  return bestScore
+  // Pick the most likely outcome, with diversity for close matches.
+  // ── Diversity logic ──────────────────────────────────
+  // When the top outcome's margin over the second is small, inject variety:
+  // - Prefer draw → extra time/penalties (realistic for knockout football)
+  // - Minor upsets when the data supports it
+  const MARGIN = 0.10 // 10pp threshold for "close match"
+
+  if (homeWin >= draw && homeWin >= awayWin) {
+    const runnerUp = Math.max(draw, awayWin)
+    if (homeWin - runnerUp < MARGIN) {
+      // Close match — prefer draw to create extra time
+      return { score: bestDrawScore, outcome: 'draw' }
+    }
+    return { score: bestHomeScore, outcome: 'home' }
+  } else if (draw >= homeWin && draw >= awayWin) {
+    const runnerUp = Math.max(homeWin, awayWin)
+    if (draw - runnerUp < MARGIN) {
+      // Close — flip to a win to avoid "all draws"
+      if (homeWin >= awayWin) {
+        return { score: bestHomeScore, outcome: 'home' }
+      } else {
+        return { score: bestAwayScore, outcome: 'away' }
+      }
+    }
+    return { score: bestDrawScore, outcome: 'draw' }
+  } else {
+    const runnerUp = Math.max(homeWin, draw)
+    if (awayWin - runnerUp < MARGIN) {
+      // Close match — prefer draw to create extra time
+      return { score: bestDrawScore, outcome: 'draw' }
+    }
+    return { score: bestAwayScore, outcome: 'away' }
+  }
 }
 
 /**
- * Predict the most likely penalty shootout score.
+ * Penalty shootout predictor with realistic variance.
  *
- * Model: each team takes 5 penalties. Each penalty has a success rate
- * based on team strength (70‑80%). If tied after 5 rounds, sudden death
- * continues with the stronger team more likely to win.
+ * 5-round shootout. Success rates (70-82%) based on team strength.
+ * If tied after 5 rounds, sudden death continues with the stronger
+ * team having a marginal advantage — but not guaranteed.
  */
 function predictPenaltyScore(
   homeStrength: number,
   awayStrength: number,
 ): [number, number] {
-  // Success rate: 70% base + up to 10% from strength
-  const homeRate = 0.70 + (homeStrength / 100) * 0.10
-  const awayRate = 0.70 + (awayStrength / 100) * 0.10
+  // Strength-adjusted success rates: 70% base + 0-12% from strength
+  const homeRate = 0.70 + (homeStrength / 100) * 0.12
+  const awayRate = 0.70 + (awayStrength / 100) * 0.12
 
-  // Expected score after 5 rounds each
-  let hScore = Math.round(5 * homeRate)
-  let aScore = Math.round(5 * awayRate)
+  // Expected score after 5 rounds (rounded to simulate variance)
+  const homeExpected = 5 * homeRate
+  const awayExpected = 5 * awayRate
+
+  // Add small variance based on strength difference to create diversity
+  const strengthDiff = (homeStrength - awayStrength) / 100
+  const homeAdj = Math.round(homeExpected + Math.sign(strengthDiff) * Math.min(Math.abs(strengthDiff), 0.5))
+  const awayAdj = Math.round(awayExpected - Math.sign(strengthDiff) * Math.min(Math.abs(strengthDiff), 0.5))
+
+  let hScore = Math.max(2, Math.min(6, homeAdj))
+  let aScore = Math.max(2, Math.min(6, awayAdj))
 
   // Sudden death if tied after 5 rounds
   if (hScore === aScore) {
-    // Stronger team wins in sudden death
+    // Stronger team slightly more likely to win sudden death, not guaranteed
     const total = homeStrength + awayStrength
-    if (total > 0 && homeStrength / total >= 0.5) {
-      hScore += 1  // home wins 5-4 or 6-5
+    if (total > 0 && homeStrength / total >= 0.55) {
+      hScore += 1  // 5-4
+    } else if (total > 0 && awayStrength / total >= 0.55) {
+      aScore += 1  // 4-5
     } else {
-      aScore += 1  // away wins
+      // Very close — could go either way, give 5-4 to home as marginal favorite
+      hScore += 1
     }
   }
 
-  // Clamp to realistic range
   return [Math.min(hScore, 7), Math.min(aScore, 7)]
 }
 
