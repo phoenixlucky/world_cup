@@ -12,7 +12,7 @@
 import { useState, useMemo, useCallback, useEffect, type ReactNode } from 'react'
 import { teams, groupNames } from '../data/teams'
 import { computeScores, DEFAULT_WEIGHTS, type TeamScores } from '../engine/scorer'
-import { predictMostLikelyScore, predictScoreProbs, predictKnockoutScore } from '../engine/poisson'
+import { predictMostLikelyScore, predictScoreProbs, predictFullKnockoutResult } from '../engine/poisson'
 import { computeAllStandings } from '../engine/standings'
 import { LIVE_SCORES, FROZEN_PREDICTIONS, MATCH_NOTES, modelTag } from '../data/results'
 import { FlagImg } from './FlagImg'
@@ -570,8 +570,9 @@ function predictScore(homeId: string, awayId: string, tm: Map<string, number>, r
   const as = tm.get(awayId) || 50
   // Knockout rounds: use knockout rules (no draws)
   if (round && round !== 'group' && round !== 'ceremony') {
-    const result = predictKnockoutScore(hs, as)
-    return result.score
+    const kr = predictFullKnockoutResult(hs, as)
+    // Return the final aggregate score after extra time/penalties
+    return kr.afterExtraTime ?? kr.regular
   }
   return predictMostLikelyScore(hs, as)
 }
@@ -962,11 +963,12 @@ export function ScheduleView() {
                   }
                   if (!predStr) {
                     if (isKnockout) {
-                      const ks = predictKnockoutScore(
+                      const kr = predictFullKnockoutResult(
                         teamScoreMap.get(home.id) || 50,
                         teamScoreMap.get(away.id) || 50,
                       )
-                      predStr = `${ks.score[0]}-${ks.score[1]}`
+                      const finalScore = kr.afterExtraTime ?? kr.regular
+                      predStr = `${finalScore[0]}-${finalScore[1]}`
                     } else {
                       const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
                       predStr = `${sp.score[0]}-${sp.score[1]}`
@@ -974,20 +976,30 @@ export function ScheduleView() {
                   }
 
                   if (isKnockout) {
-                    // Knockout display — show winner, no draw probability
-                    const ks = predictKnockoutScore(
+                    // Knockout display — show all three stages
+                    const kr = predictFullKnockoutResult(
                       teamScoreMap.get(home.id) || 50,
                       teamScoreMap.get(away.id) || 50,
                     )
-                    const homeWon = ks.winner === 'home'
+                    const [rH, rA] = kr.regular
+                    const homeWon = kr.winner === 'home'
                     scoreContent = (
                       <div className="flex flex-col items-center">
                         <span className="text-orange-400 font-bold text-lg whitespace-nowrap">
                           预测 {predStr}
-                          {ks.isDraw && <span className="text-[10px] text-slate-500 ml-1">(点)</span>}
+                        </span>
+                        <span className="text-xs text-slate-300 font-mono">
+                          {rH}-{rA}
+                          {kr.hasExtraTime && kr.afterExtraTime && (
+                            <span className="text-slate-500"> (加时 {kr.afterExtraTime[0]}-{kr.afterExtraTime[1]})</span>
+                          )}
+                          {kr.hasPenalties && kr.penalties && (
+                            <span className="text-yellow-400"> (点球 {kr.penalties[0]}-{kr.penalties[1]})</span>
+                          )}
                         </span>
                         <span className={`text-xs font-semibold ${homeWon ? 'text-green-400' : 'text-orange-400'}`}>
                           {homeWon ? home.nameCN : away.nameCN} 晋级
+                          {kr.hasPenalties ? ' (点球)' : kr.hasExtraTime ? ' (加时)' : ''}
                         </span>
                       </div>
                     )

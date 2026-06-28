@@ -10,7 +10,7 @@
 import { useMemo } from 'react'
 import type { TeamScores } from '../engine/scorer'
 import type { GroupStanding } from '../engine/standings'
-import { predictKnockoutScore } from '../engine/poisson'
+import { predictFullKnockoutResult } from '../engine/poisson'
 
 import { FlagImg } from './FlagImg'
 
@@ -159,9 +159,10 @@ export function Round32View({ scores, standings }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {matches.map(m => {
           const vi = venueMap[m.venueKey]
-          const { score: [predH, predA], winner, isDraw } = predictKnockoutScore(m.home.total, m.away.total)
-          const homeWon = winner === 'home'
-          const awayWon = winner === 'away'
+          const kr = predictFullKnockoutResult(m.home.total, m.away.total)
+          const [rH, rA] = kr.regular
+          const homeWon = kr.winner === 'home'
+          const awayWon = kr.winner === 'away'
 
           return (
             <div
@@ -186,12 +187,21 @@ export function Round32View({ scores, standings }: Props) {
                   {homeWon && <span className="text-green-400 text-xs flex-shrink-0">✓</span>}
                 </div>
 
-                {/* Predicted score */}
-                <div className="flex-shrink-0 px-3 py-1 bg-slate-900/60 rounded-lg border border-slate-600 text-center min-w-[4rem]">
-                  <span className={`font-bold text-base font-mono ${homeWon ? 'text-green-400' : awayWon ? 'text-orange-400' : 'text-slate-400'}`}>
-                    {predH}-{predA}
+                {/* Predicted score — multiline breakdown */}
+                <div className="flex-shrink-0 px-3 py-1 bg-slate-900/60 rounded-lg border border-slate-600 text-center min-w-[4.5rem]">
+                  <span className={`font-bold text-base font-mono leading-tight ${homeWon ? 'text-green-400' : 'text-orange-400'}`}>
+                    {rH}-{rA}
                   </span>
-                  {isDraw && <span className="block text-[10px] text-slate-500 leading-tight">(点)</span>}
+                  {kr.hasExtraTime && kr.afterExtraTime && (
+                    <span className="block text-[10px] text-slate-400 font-mono leading-tight">
+                      加时 {kr.afterExtraTime[0]}-{kr.afterExtraTime[1]}
+                    </span>
+                  )}
+                  {kr.hasPenalties && kr.penalties && (
+                    <span className="block text-[10px] text-yellow-400 font-mono leading-tight">
+                      点球 {kr.penalties[0]}-{kr.penalties[1]}
+                    </span>
+                  )}
                 </div>
 
                 {/* Away team */}
@@ -219,8 +229,8 @@ export function Round32View({ scores, standings }: Props) {
                 }`}>{m.away.total.toFixed(0)}</span>
                 <span className="text-slate-600">·</span>
                 <span className={`text-xs font-semibold ${homeWon ? 'text-green-400' : 'text-orange-400'}`}>
-                  {winner === 'home' ? m.home.teamNameCN : m.away.teamNameCN} 晋级
-                  {isDraw ? ' (点球)' : ''}
+                  {homeWon ? m.home.teamNameCN : m.away.teamNameCN} 晋级
+                  {kr.hasPenalties ? ' (点球)' : kr.hasExtraTime ? ' (加时)' : ''}
                 </span>
               </div>
             </div>
