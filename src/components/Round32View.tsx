@@ -10,7 +10,7 @@
 import { useMemo } from 'react'
 import type { TeamScores } from '../engine/scorer'
 import type { GroupStanding } from '../engine/standings'
-import { predictMostLikelyScore } from '../engine/poisson'
+import { predictKnockoutScore } from '../engine/poisson'
 
 import { FlagImg } from './FlagImg'
 
@@ -159,7 +159,9 @@ export function Round32View({ scores, standings }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {matches.map(m => {
           const vi = venueMap[m.venueKey]
-          const [predH, predA] = predictMostLikelyScore(m.home.total, m.away.total)
+          const { score: [predH, predA], winner, isDraw } = predictKnockoutScore(m.home.total, m.away.total)
+          const homeWon = winner === 'home'
+          const awayWon = winner === 'away'
 
           return (
             <div
@@ -178,26 +180,29 @@ export function Round32View({ scores, standings }: Props) {
               {/* Match pairing */}
               <div className="flex items-center gap-2">
                 {/* Home team */}
-                <div className="flex items-center gap-2 min-w-0 flex-1">
+                <div className={`flex items-center gap-2 min-w-0 flex-1 ${homeWon ? 'opacity-100' : 'opacity-60'}`}>
                   <FlagImg code={m.home.flagCode} size={20} />
-                  <span className="text-white text-sm font-medium truncate">{m.home.teamNameCN}</span>
+                  <span className={`text-sm font-medium truncate ${homeWon ? 'text-white' : 'text-slate-400'}`}>{m.home.teamNameCN}</span>
+                  {homeWon && <span className="text-green-400 text-xs flex-shrink-0">✓</span>}
                 </div>
 
                 {/* Predicted score */}
                 <div className="flex-shrink-0 px-3 py-1 bg-slate-900/60 rounded-lg border border-slate-600 text-center min-w-[4rem]">
-                  <span className="text-orange-400 font-bold text-base font-mono">
+                  <span className={`font-bold text-base font-mono ${homeWon ? 'text-green-400' : awayWon ? 'text-orange-400' : 'text-slate-400'}`}>
                     {predH}-{predA}
                   </span>
+                  {isDraw && <span className="block text-[10px] text-slate-500 leading-tight">(点)</span>}
                 </div>
 
                 {/* Away team */}
-                <div className="flex items-center gap-2 min-w-0 flex-1 justify-end">
-                  <span className="text-white text-sm font-medium truncate">{m.away.teamNameCN}</span>
+                <div className={`flex items-center gap-2 min-w-0 flex-1 justify-end ${awayWon ? 'opacity-100' : 'opacity-60'}`}>
+                  {awayWon && <span className="text-green-400 text-xs flex-shrink-0">✓</span>}
+                  <span className={`text-sm font-medium truncate ${awayWon ? 'text-white' : 'text-slate-400'}`}>{m.away.teamNameCN}</span>
                   <FlagImg code={m.away.flagCode} size={20} />
                 </div>
               </div>
 
-              {/* Group provenance */}
+              {/* Group provenance + winner line */}
               <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500">
                 <span>{m.home.group}组 第{['一', '二', '三', '四'][
                   ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].indexOf(m.home.group)
@@ -212,6 +217,11 @@ export function Round32View({ scores, standings }: Props) {
                 <span className={`font-mono ${
                   m.away.total >= 70 ? 'text-green-400' : 'text-slate-400'
                 }`}>{m.away.total.toFixed(0)}</span>
+                <span className="text-slate-600">·</span>
+                <span className={`text-xs font-semibold ${homeWon ? 'text-green-400' : 'text-orange-400'}`}>
+                  {winner === 'home' ? m.home.teamNameCN : m.away.teamNameCN} 晋级
+                  {isDraw ? ' (点球)' : ''}
+                </span>
               </div>
             </div>
           )

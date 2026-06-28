@@ -168,6 +168,39 @@ export function predictScoreProbs(
   }
 }
 
+/**
+ * Predict the result of a knockout match (must have a winner).
+ *
+ * Knockout rules: if the most likely score is a draw, the stronger team
+ * (higher total strength) advances via extra time / penalties.
+ *
+ * Returns the predicted score and which side wins.
+ */
+export function predictKnockoutScore(
+  homeStrength: number,
+  awayStrength: number,
+): {
+  score: [number, number]
+  winner: 'home' | 'away'
+  isDraw: boolean
+} {
+  const score = predictMostLikelyScore(homeStrength, awayStrength)
+  const [hG, aG] = score
+
+  if (hG !== aG) {
+    return { score, winner: hG > aG ? 'home' : 'away', isDraw: false }
+  }
+
+  // Draw — stronger team wins on penalties
+  const totalStrength = homeStrength + awayStrength
+  const winner: 'home' | 'away' =
+    totalStrength > 0 && homeStrength / totalStrength >= 0.5
+      ? 'home'
+      : 'away'
+
+  return { score, winner, isDraw: true }
+}
+
 // ── Legacy predictor (preserved for already‑completed matches) ──
 // ── Helpers ────────────────────────────────────────────────
 
