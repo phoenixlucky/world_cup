@@ -12,7 +12,7 @@
 import { useState, useMemo, useCallback, useEffect, type ReactNode } from 'react'
 import { teams, groupNames } from '../data/teams'
 import { computeScores, DEFAULT_WEIGHTS, type TeamScores } from '../engine/scorer'
-import { predictMostLikelyScore, predictScoreProbs } from '../engine/poisson'
+import { predictMostLikelyScore, predictScoreProbs, predictKnockoutScore } from '../engine/poisson'
 import { computeAllStandings } from '../engine/standings'
 import { LIVE_SCORES, FROZEN_PREDICTIONS, MATCH_NOTES, modelTag } from '../data/results'
 import { FlagImg } from './FlagImg'
@@ -565,9 +565,14 @@ function SyncButton({ setLiveScores }: { setLiveScores: React.Dispatch<React.Set
   )
 }
 
-function predictScore(homeId: string, awayId: string, tm: Map<string, number>): [number, number] {
+function predictScore(homeId: string, awayId: string, tm: Map<string, number>, round?: string): [number, number] {
   const hs = tm.get(homeId) || 50
   const as = tm.get(awayId) || 50
+  // Knockout rounds: use knockout rules (no draws)
+  if (round && round !== 'group' && round !== 'ceremony') {
+    const result = predictKnockoutScore(hs, as)
+    return result.score
+  }
   return predictMostLikelyScore(hs, as)
 }
 
@@ -724,7 +729,7 @@ export function ScheduleView() {
       if (!home || !away) continue
 
       // Compute & freeze
-      const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
+      const [ph, pa] = predictScore(home.id, away.id, teamScoreMap, m.round)
       frozen[m.id] = `${ph}-${pa}`
       changed = true
     }
@@ -869,7 +874,7 @@ export function ScheduleView() {
                 let scoreContent: ReactNode = null
                 // Store prediction in localStorage for future reference
                 if (!past && home && away) {
-                  const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
+                  const [ph, pa] = predictScore(home.id, away.id, teamScoreMap, m.round)
                   const predStr = `${ph}-${pa}`
                   try {
                     const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
@@ -886,7 +891,7 @@ export function ScheduleView() {
                       if (frozenPreds[m.id]) {
                         preds[m.id] = frozenPreds[m.id]
                       } else {
-                        const [ph, pa] = predictScore(home.id, away.id, teamScoreMap)
+                        const [ph, pa] = predictScore(home.id, away.id, teamScoreMap, m.round)
                         preds[m.id] = `${ph}-${pa}`
                       }
                       localStorage.setItem('wc26-predicted', JSON.stringify(preds))
@@ -946,6 +951,8 @@ export function ScheduleView() {
                   )
                 } else if (home && away) {
                   // 只有预测，无实际比分
+                  const isKnockout = m.round !== 'group' && m.round !== 'ceremony'
+
                   let predStr = FROZEN_PREDICTIONS[m.id] || frozenPreds[m.id] || ''
                   if (!predStr) {
                     try {
@@ -954,32 +961,61 @@ export function ScheduleView() {
                     } catch {}
                   }
                   if (!predStr) {
-                    const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
-                    predStr = `${sp.score[0]}-${sp.score[1]}`
+                    if (isKnockout) {
+                      const ks = predictKnockoutScore(
+                        teamScoreMap.get(home.id) || 50,
+                        teamScoreMap.get(away.id) || 50,
+                      )
+                      predStr = `${ks.score[0]}-${ks.score[1]}`
+                    } else {
+                      const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
+                      predStr = `${sp.score[0]}-${sp.score[1]}`
+                    }
                   }
-                  scoreContent = (
-                    <div className="flex flex-col items-center">
-                      <span className="text-orange-400 font-bold text-lg whitespace-nowrap">
-                        预测 {predStr}
+
+                  if (isKnockout) {
+                    // Knockout display — show winner, no draw probability
+                    const ks = predictKnockoutScore(
+                      teamScoreMap.get(home.id) || 50,
+                      teamScoreMap.get(away.id) || 50,
+                    )
+                    const homeWon = ks.winner === 'home'
+                    scoreContent = (
+                      <div className="flex flex-col items-center">
+                        <span className="text-orange-400 font-bold text-lg whitespace-nowrap">
+                          预测 {predStr}
+                          {ks.isDraw && <span className="text-[10px] text-slate-500 ml-1">(点)</span>}
+                        </span>
+                        <span className={`text-xs font-semibold ${homeWon ? 'text-green-400' : 'text-orange-400'}`}>
+                          {homeWon ? home.nameCN : away.nameCN} 晋级
+                        </span>
+                      </div>
+                    )
+                  } else {
+                    scoreContent = (
+                      <div className="flex flex-col items-center">
+                        <span className="text-orange-400 font-bold text-lg whitespace-nowrap">
+                          预测 {predStr}
+                          {home && away && (() => {
+                            const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
+                            return sp.bestOverallScore[0] !== sp.score[0] || sp.bestOverallScore[1] !== sp.score[1]
+                              ? <span className="text-orange-400 text-sm font-normal">({sp.bestOverallScore[0]}-{sp.bestOverallScore[1]})</span>
+                              : null
+                          })()}
+                          <span className="text-[9px] text-slate-600 font-mono ml-1">{modelTag(m.id)}</span>
+                        </span>
                         {home && away && (() => {
                           const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
-                          return sp.bestOverallScore[0] !== sp.score[0] || sp.bestOverallScore[1] !== sp.score[1]
-                            ? <span className="text-orange-400 text-sm font-normal">({sp.bestOverallScore[0]}-{sp.bestOverallScore[1]})</span>
-                            : null
+                          return (
+                            <span className="text-[10px] text-slate-400 font-mono mt-0.5">
+                              胜{fmtPct(sp.probs.homeWin)} 平{fmtPct(sp.probs.draw)} 负{fmtPct(sp.probs.awayWin)}
+                              <span className="ml-1.5 text-slate-500">比分{fmtPct(sp.probs.scoreProb)}</span>
+                            </span>
+                          )
                         })()}
-                        <span className="text-[9px] text-slate-600 font-mono ml-1">{modelTag(m.id)}</span>
-                      </span>
-                      {home && away && (() => {
-                        const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
-                        return (
-                          <span className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            胜{fmtPct(sp.probs.homeWin)} 平{fmtPct(sp.probs.draw)} 负{fmtPct(sp.probs.awayWin)}
-                            <span className="ml-1.5 text-slate-500">比分{fmtPct(sp.probs.scoreProb)}</span>
-                          </span>
-                        )
-                      })()}
-                    </div>
-                  )
+                      </div>
+                    )
+                  }
                 }
 
                 if (m.round === 'ceremony') {
