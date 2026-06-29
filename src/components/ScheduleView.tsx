@@ -993,9 +993,6 @@ export function ScheduleView() {
                     const homeWon = kr.winner === 'home'
                     scoreContent = (
                       <div className="flex flex-col items-center">
-                        <span className="text-orange-400 font-bold text-lg whitespace-nowrap">
-                          预测 {predStr}
-                        </span>
                         <span className="text-xs text-slate-300 font-mono">
                           {rH}-{rA}
                           {kr.hasExtraTime && kr.afterExtraTime && (
