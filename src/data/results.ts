@@ -235,6 +235,26 @@ export const KNOCKOUT_PREDICTIONS: Record<string, string> = {
   'r32-15': '1-1',
 }
 
+/** 尉缭子分析法淘汰赛晋级方向 + 决胜方式 */
+export const KNOCKOUT_WINNERS: Record<string, { winner: 'home' | 'away'; hasExtraTime: boolean; hasPenalties: boolean }> = {
+  'r32-0':  { winner: 'away', hasExtraTime: false, hasPenalties: false },
+  'r32-1':  { winner: 'home', hasExtraTime: false, hasPenalties: false },
+  'r32-2':  { winner: 'home', hasExtraTime: true,  hasPenalties: false },
+  'r32-3':  { winner: 'home', hasExtraTime: false, hasPenalties: false },
+  'r32-4':  { winner: 'home', hasExtraTime: false, hasPenalties: false },
+  'r32-5':  { winner: 'away', hasExtraTime: false, hasPenalties: false },
+  'r32-6':  { winner: 'home', hasExtraTime: true,  hasPenalties: true  },
+  'r32-7':  { winner: 'home', hasExtraTime: false, hasPenalties: false },
+  'r32-8':  { winner: 'home', hasExtraTime: false, hasPenalties: false },
+  'r32-9':  { winner: 'home', hasExtraTime: false, hasPenalties: false },
+  'r32-10': { winner: 'home', hasExtraTime: false, hasPenalties: false },
+  'r32-11': { winner: 'home', hasExtraTime: false, hasPenalties: false },
+  'r32-12': { winner: 'home', hasExtraTime: false, hasPenalties: false },
+  'r32-13': { winner: 'home', hasExtraTime: false, hasPenalties: false },
+  'r32-14': { winner: 'home', hasExtraTime: true,  hasPenalties: false },
+  'r32-15': { winner: 'home', hasExtraTime: true,  hasPenalties: true  },
+}
+
 /** 返回尉缭子分析法标签（淘汰赛专用） */
 export function knockoutModelTag(matchId: string): string {
   return matchId.startsWith('r32-') || matchId.startsWith('r16-') ||

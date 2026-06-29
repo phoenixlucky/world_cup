@@ -11,7 +11,7 @@ import { useMemo } from 'react'
 import type { TeamScores } from '../engine/scorer'
 import type { GroupStanding } from '../engine/standings'
 import { predictFullKnockoutResult } from '../engine/poisson'
-import { knockoutModelTag } from '../data/results'
+import { KNOCKOUT_PREDICTIONS, KNOCKOUT_WINNERS, knockoutModelTag } from '../data/results'
 
 import { FlagImg } from './FlagImg'
 
@@ -161,13 +161,19 @@ export function Round32View({ scores, standings }: Props) {
         {matches.map(m => {
           const vi = venueMap[m.venueKey]
           const r32Key = `r32-${m.id - 73}`
+          const frozenPred = KNOCKOUT_PREDICTIONS[r32Key]
+          const frozenW = KNOCKOUT_WINNERS[r32Key]
           const tag = knockoutModelTag(r32Key)
 
-          // Use live prediction engine only for display breakdown (scores match frozen)
+          // Use frozen winner + stage data for consistency across pages
+          const homeWon = frozenW ? frozenW.winner === 'home' : true
+          const awayWon = frozenW ? frozenW.winner === 'away' : false
+          const hasExtra = frozenW?.hasExtraTime ?? false
+          const hasPens = frozenW?.hasPenalties ?? false
+          const displayScore = frozenPred || '0-0'
+
+          // Live engine still provides extra‑time / penalty score lines
           const kr = predictFullKnockoutResult(m.home.total, m.away.total)
-          const [rH, rA] = kr.regular
-          const homeWon = kr.winner === 'home'
-          const awayWon = kr.winner === 'away'
 
           return (
             <div
@@ -195,14 +201,14 @@ export function Round32View({ scores, standings }: Props) {
                 {/* Predicted score — multiline breakdown */}
                 <div className="flex-shrink-0 px-3 py-1 bg-slate-900/60 rounded-lg border border-slate-600 text-center min-w-[4.5rem]">
                   <span className={`font-bold text-base font-mono leading-tight ${homeWon ? 'text-green-400' : 'text-orange-400'}`}>
-                    {rH}-{rA}
+                    {displayScore}
                   </span>
-                  {kr.hasExtraTime && kr.afterExtraTime && (
+                  {hasExtra && kr.afterExtraTime && (
                     <span className="block text-[10px] text-slate-400 font-mono leading-tight">
                       加时 {kr.afterExtraTime[0]}-{kr.afterExtraTime[1]}
                     </span>
                   )}
-                  {kr.hasPenalties && kr.penalties && (
+                  {hasPens && kr.penalties && (
                     <span className="block text-[10px] text-yellow-400 font-mono leading-tight">
                       点球 {kr.penalties[0]}-{kr.penalties[1]}
                     </span>
@@ -240,7 +246,7 @@ export function Round32View({ scores, standings }: Props) {
                 <span className="text-slate-600">·</span>
                 <span className={`text-xs font-semibold ${homeWon ? 'text-green-400' : 'text-orange-400'}`}>
                   {homeWon ? m.home.teamNameCN : m.away.teamNameCN} 晋级
-                  {kr.hasPenalties ? ' (点球)' : kr.hasExtraTime ? ' (加时)' : ''}
+                  {hasPens ? ' (点球)' : hasExtra ? ' (加时)' : ''}
                 </span>
               </div>
             </div>
