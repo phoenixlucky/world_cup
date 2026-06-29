@@ -649,22 +649,10 @@ export function ScheduleView() {
     }
 
     const slotMap = new Map<string, TeamScores>()
-    const allThird: { team: TeamScores; pts: number; gd: number; gf: number }[] = []
     for (const [g, ranked] of groupRanked) {
       if (ranked[0]) slotMap.set(`${g}1`, ranked[0])
       if (ranked[1]) slotMap.set(`${g}2`, ranked[1])
-      if (ranked[2]) {
-        const st = standings.get(g)?.find(s => s.teamId === ranked[2].teamId)
-        allThird.push({ team: ranked[2], pts: st?.pts ?? 0, gd: st?.gd ?? 0, gf: st?.gf ?? 0 })
-      }
     }
-
-    allThird.sort((a, b) => {
-      if (b.pts !== a.pts) return b.pts - a.pts
-      if (b.gd !== a.gd) return b.gd - a.gd
-      return b.gf - a.gf
-    })
-    const bestThird = allThird.slice(0, 8)
 
     // 第三名分配：按小组配对
     const thirdGroupMap: Record<number, string> = {
