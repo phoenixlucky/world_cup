@@ -88,10 +88,15 @@ export function Round32View({ scores, standings }: Props) {
     })
     const bestThird = allThird.slice(0, 8)
 
-    const thirdMatchOrder = [74, 77, 79, 80, 81, 82, 85, 87]
+    // 第三名分配：按小组配对（非排名顺序）
+    const thirdGroupMap: Record<number, string> = {
+      74: 'D', 77: 'F', 79: 'E', 80: 'K',
+      81: 'B', 82: 'I', 85: 'J', 87: 'L',
+    }
     const assigned = new Map<number, TeamScores>()
-    for (let i = 0; i < Math.min(bestThird.length, 8); i++) {
-      assigned.set(thirdMatchOrder[i], bestThird[i].team)
+    for (const [matchId, g] of Object.entries(thirdGroupMap)) {
+      const third = groupRanked.get(g)?.[2]
+      if (third) assigned.set(Number(matchId), third)
     }
 
     const matchDefs: Record<number, [string, string]> = {
@@ -136,8 +141,28 @@ export function Round32View({ scores, standings }: Props) {
       const away = resolveSlot(awaySlot)
       if (!home || !away) continue
 
-      const date = r32Dates[matchIndex % r32Dates.length]
-      const vk = allVenueKeys[matchIndex % allVenueKeys.length]
+      // 真实赛程日期/场地（来自2026世界杯官方赛程）
+      const r32RealSchedule: Record<number, { date: string; venueKey: string }> = {
+        73: { date: '6月28日', venueKey: 'SoFi体育场' },
+        74: { date: '6月29日', venueKey: '吉列体育场' },
+        75: { date: '6月29日', venueKey: 'BBVA体育场' },
+        76: { date: '6月29日', venueKey: 'NRG体育场' },
+        77: { date: '6月30日', venueKey: '大都会人寿体育场' },
+        78: { date: '6月30日', venueKey: 'AT&T体育场' },
+        79: { date: '6月30日', venueKey: '阿兹特克体育场' },
+        80: { date: '7月1日',  venueKey: '梅赛德斯-宾士体育场' },
+        81: { date: '7月1日',  venueKey: '李维斯体育场' },
+        82: { date: '7月1日',  venueKey: '流明球场' },
+        83: { date: '7月2日',  venueKey: 'BMO球场' },
+        84: { date: '7月2日',  venueKey: 'SoFi体育场' },
+        85: { date: '7月2日',  venueKey: '卑诗体育馆' },
+        86: { date: '7月3日',  venueKey: '硬石体育场' },
+        87: { date: '7月3日',  venueKey: '箭頭体育场' },
+        88: { date: '7月3日',  venueKey: 'AT&T体育场' },
+      }
+      const sched = r32RealSchedule[m]
+      const date = sched?.date ?? r32Dates[matchIndex % r32Dates.length]
+      const vk = sched?.venueKey ?? allVenueKeys[matchIndex % allVenueKeys.length]
       result.push({ id: m, home, away, date, venueKey: vk })
       matchIndex++
     }

@@ -666,10 +666,15 @@ export function ScheduleView() {
     })
     const bestThird = allThird.slice(0, 8)
 
-    const thirdMatchOrder = [74, 77, 79, 80, 81, 82, 85, 87]
+    // 第三名分配：按小组配对
+    const thirdGroupMap: Record<number, string> = {
+      74: 'D', 77: 'F', 79: 'E', 80: 'K',
+      81: 'B', 82: 'I', 85: 'J', 87: 'L',
+    }
     const assigned = new Map<number, TeamScores>()
-    for (let i = 0; i < Math.min(bestThird.length, 8); i++) {
-      assigned.set(thirdMatchOrder[i], bestThird[i].team)
+    for (const [matchId, g] of Object.entries(thirdGroupMap)) {
+      const third = groupRanked.get(g)?.[2]
+      if (third) assigned.set(Number(matchId), third)
     }
 
     const matchDefs: Record<number, [string, string]> = {

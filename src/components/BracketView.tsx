@@ -58,12 +58,15 @@ export function BracketView({ scores, standings }: Props) {
     })
     const bestThird = allThird.slice(0, 8)
 
-    // Assign 8 best third-placed teams to the 8 third-placed slots by rank
-    // (best 3rd → match 74, 2nd best → match 77, ...)
-    const thirdMatchOrder = [74, 77, 79, 80, 81, 82, 85, 87]
+    // Assign 8 third-placed teams to specific match slots by group
+    const thirdGroupMap: Record<number, string> = {
+      74: 'D', 77: 'F', 79: 'E', 80: 'K',
+      81: 'B', 82: 'I', 85: 'J', 87: 'L',
+    }
     const assigned = new Map<number, TeamScores>()
-    for (let i = 0; i < Math.min(bestThird.length, 8); i++) {
-      assigned.set(thirdMatchOrder[i], bestThird[i].team)
+    for (const [matchId, g] of Object.entries(thirdGroupMap)) {
+      const third = groupRanked.get(g)?.[2]
+      if (third) assigned.set(Number(matchId), third)
     }
 
     // Exact 32强 bracket (2026 FIFA World Cup format)
