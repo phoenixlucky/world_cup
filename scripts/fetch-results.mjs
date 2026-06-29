@@ -51,6 +51,30 @@ for (const [g, matches] of Object.entries(GROUP_MATCHES)) {
 // Knockout match counter (per date)
 const koCounter = {}
 
+// Round of 32 bracket lookup: "homeId-awayId" -> "r32-N"
+const R32_MATCHUPS = [
+  ['south-africa', 'canada'],        // r32-0: 加拿大 晋级
+  ['germany', 'paraguay'],           // r32-1: 德国 晋级
+  ['netherlands', 'morocco'],        // r32-2: 荷兰 晋级 (加时)
+  ['brazil', 'japan'],               // r32-3: 巴西 晋级
+  ['france', 'sweden'],              // r32-4: 法国 晋级
+  ['ivory-coast', 'norway'],         // r32-5: 挪威 晋级
+  ['mexico', 'ecuador'],             // r32-6: 墨西哥 晋级 (点球)
+  ['england', 'dr-congo'],           // r32-7: 英格兰 晋级
+  ['usa', 'bosnia'],                 // r32-8: 美国 晋级
+  ['belgium', 'senegal'],            // r32-9: 比利时 晋级
+  ['portugal', 'croatia'],           // r32-10: 葡萄牙 晋级
+  ['spain', 'austria'],              // r32-11: 西班牙 晋级
+  ['switzerland', 'algeria'],        // r32-12: 瑞士 晋级
+  ['argentina', 'cape-verde'],       // r32-13: 阿根廷 晋级
+  ['colombia', 'ghana'],             // r32-14: 哥伦比亚 晋级
+  ['australia', 'egypt'],            // r32-15: 澳大利亚 晋级 (点球)
+]
+
+const r32Lookup = {}
+R32_MATCHUPS.forEach(([home, away], i) => {
+  r32Lookup[home + '-' + away] = `r32-${i}`
+
 function getTeamId(homeAbbr, awayAbbr) {
   const homeId = ESPN_TEAM_MAP[homeAbbr]
   const awayId = ESPN_TEAM_MAP[awayAbbr]
@@ -63,7 +87,10 @@ function getMatchId(homeId, awayId, dateStr) {
   // Try group match first
   const gid = matchLookup[key]
   if (gid) return gid
-  // Fallback: knockout ID
+  // Try R32 bracket
+  const r32id = r32Lookup[key]
+  if (r32id) return r32id
+  // Fallback: generic knockout ID
   koCounter[dateStr] = (koCounter[dateStr] || 0) + 1
   return `ko-${dateStr}-${koCounter[dateStr]}`
 }
