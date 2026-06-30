@@ -900,7 +900,7 @@ export function ScheduleView() {
                     const preds = JSON.parse(localStorage.getItem('wc26-predicted') || '{}')
                     cached = preds[m.id] || ''
                   } catch {}
-                  const predStr = FROZEN_PREDICTIONS[m.id] || frozenPreds[m.id] || cached || ''
+                  const predStr = FROZEN_PREDICTIONS[m.id] || KNOCKOUT_PREDICTIONS[m.id] || frozenPreds[m.id] || cached || ''
                   let comparison: { icon: string; label: string; color: string } | null = null
                   if (predStr) {
                     const [aH, aA] = storedScore.split('-').map(Number)
@@ -927,7 +927,7 @@ export function ScheduleView() {
                             ? <span className="text-orange-400">({sp.bestOverallScore[0]}-{sp.bestOverallScore[1]})</span>
                             : null
                         })()}
-                        <span className="text-[9px] text-slate-600 font-mono ml-0.5">{modelTag(m.id)}</span>
+                        <span className="text-[9px] text-slate-600 font-mono ml-0.5">{modelTag(m.id)}{m.round !== 'group' && m.round !== 'ceremony' ? ` ${knockoutModelTag(m.id)}` : ''}</span>
                       </span>}
                       {comparison && comparison.label !== '预测准确' && (
                         <span className={`${comparison.color} text-[10px] font-medium whitespace-nowrap`}>{comparison.label}</span>

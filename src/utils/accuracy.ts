@@ -6,7 +6,7 @@
  */
 
 import { teams } from '../data/teams'
-import { LIVE_SCORES, FROZEN_PREDICTIONS } from '../data/results'
+import { LIVE_SCORES, FROZEN_PREDICTIONS, KNOCKOUT_PREDICTIONS } from '../data/results'
 
 // ── Match types ─────────────────────────────────────────────
 
@@ -196,7 +196,7 @@ export function computeAccuracy(): AccuracyStats {
 
     // Use 封存预测 first, then localStorage cached predictions.
     // Never recompute — completed-match predictions are written in stone.
-    const predicted = FROZEN_PREDICTIONS[m.id] || cachedPreds[m.id] || ''
+    const predicted = FROZEN_PREDICTIONS[m.id] || KNOCKOUT_PREDICTIONS[m.id] || cachedPreds[m.id] || ''
     if (!predicted) continue
 
     const [aH, aA] = actualScore.split('-').map(Number)
