@@ -1,115 +1,167 @@
 /**
  * BracketView — 32-team knockout bracket visualisation
  *
- * Uses the actual tournament bracket pairings (R32_MATCHUPS) for round 1.
- * Completed matches show real scores from LIVE_SCORES; remaining rounds
- * are simulated by team strength scores.
+ * Pairings are based on the official 2026 FIFA World Cup bracket (slot-based).
+ * Completed Round-1 matches use actual scores from LIVE_SCORES;
+ * remaining rounds are simulated by team strength scores.
  */
 import { useMemo } from 'react'
 import type { TeamScores } from '../engine/scorer'
+import type { GroupStanding } from '../engine/standings'
 import { LIVE_SCORES, KNOCKOUT_WINNERS } from '../data/results'
 import { FlagImg } from './FlagImg'
 
-// 实际32强对阵表（尉缭子分析法生成的官方对阵）
+// 32强team-pair → r32-N reverse mapping
 const R32_MATCHUPS: [string, string][] = [
-  ['south-africa', 'canada'],          // r32-0
-  ['germany', 'paraguay'],             // r32-1
-  ['netherlands', 'morocco'],          // r32-2
-  ['brazil', 'japan'],                 // r32-3
-  ['france', 'sweden'],                // r32-4
-  ['ivory-coast', 'norway'],           // r32-5
-  ['mexico', 'ecuador'],               // r32-6
-  ['england', 'dr-congo'],             // r32-7
-  ['usa', 'bosnia'],                   // r32-8
-  ['belgium', 'senegal'],              // r32-9
-  ['portugal', 'croatia'],             // r32-10
-  ['spain', 'austria'],                // r32-11
-  ['switzerland', 'algeria'],          // r32-12
-  ['argentina', 'cape-verde'],         // r32-13
-  ['colombia', 'ghana'],               // r32-14
-  ['australia', 'egypt'],              // r32-15
+  ['south-africa', 'canada'],    ['germany', 'paraguay'],
+  ['netherlands', 'morocco'],    ['brazil', 'japan'],
+  ['france', 'sweden'],          ['ivory-coast', 'norway'],
+  ['mexico', 'ecuador'],         ['england', 'dr-congo'],
+  ['usa', 'bosnia'],             ['belgium', 'senegal'],
+  ['portugal', 'croatia'],       ['spain', 'austria'],
+  ['switzerland', 'algeria'],    ['argentina', 'cape-verde'],
+  ['colombia', 'ghana'],         ['australia', 'egypt'],
 ]
+const pairToR32 = new Map<string, string>()
+R32_MATCHUPS.forEach(([h, a], i) => {
+  pairToR32.set(`${h}-${a}`, `r32-${i}`)
+  pairToR32.set(`${a}-${h}`, `r32-${i}`)
+})
 
 interface Props {
   scores: TeamScores[]
+  standings: Map<string, GroupStanding[]>
 }
 
-export function BracketView({ scores }: Props) {
+interface MatchResult {
+  home: TeamScores
+  away: TeamScores
+  winner: string
+  label: string
+  actualScore?: string
+}
+
+export function BracketView({ scores, standings }: Props) {
   const smap = new Map(scores.map(s => [s.teamId, s]))
 
-  // Resolve a team ID to TeamScores object
-  const resolve = (id: string) => smap.get(id)
-
-  // Build bracket rounds from R32_MATCHUPS
   const bracket = useMemo(() => {
-    type MatchResult = {
-      home: TeamScores | undefined
-      away: TeamScores | undefined
-      winner: string | null        // teamId of the winner
-      isActual: boolean           // true if winner from LIVE_SCORES
-      actualScore?: string        // from LIVE_SCORES
+    // Group teams by group letter
+    const groups = new Map<string, TeamScores[]>()
+    for (const s of scores) {
+      if (!groups.has(s.group)) groups.set(s.group, [])
+      groups.get(s.group)!.push(s)
     }
 
-    // Round 1: use R32_MATCHUPS
-    const round1: MatchResult[] = R32_MATCHUPS.map(([homeId, awayId], i) => {
-      const home = resolve(homeId)
-      const away = resolve(awayId)
-      const r32id = `r32-${i}`
-      const actualScore = LIVE_SCORES[r32id]
-      let winner: string | null = null
-      let isActual = false
-
-      if (actualScore && home && away) {
-        // 实际结果决定晋级方
-        const [hS, aS] = actualScore.split('-').map(Number)
-        if (hS > aS) winner = homeId
-        else if (aS > hS) winner = awayId
-        else {
-          // 平局 → 点球，查 KNOCKOUT_WINNERS
-          const kw = KNOCKOUT_WINNERS[r32id]
-          if (kw) winner = kw.winner === 'home' ? homeId : awayId
-          else winner = home.total >= away.total ? homeId : awayId
-        }
-        isActual = true
-      } else if (home && away) {
-        // 无实际结果，按评分预测
-        winner = home.total >= away.total ? homeId : awayId
+    // Per-group ranking using standings
+    const groupRanked = new Map<string, TeamScores[]>()
+    for (const [g, gTeams] of groups) {
+      const gs = standings.get(g)
+      if (gs) {
+        const rankMap = new Map(gs.map((s, i) => [s.teamId, i]))
+        groupRanked.set(g, [...gTeams].sort((a, b) =>
+          (rankMap.get(a.teamId) ?? 99) - (rankMap.get(b.teamId) ?? 99)))
+      } else {
+        groupRanked.set(g, [...gTeams].sort((a, b) => b.total - a.total))
       }
+    }
 
-      return { home, away, winner, isActual, actualScore }
-    })
+    // Slot → team
+    const slotMap = new Map<string, TeamScores>()
+    for (const [g, ranked] of groupRanked) {
+      if (ranked[0]) slotMap.set(`${g}1`, ranked[0])
+      if (ranked[1]) slotMap.set(`${g}2`, ranked[1])
+    }
 
-    // Helper: advance winners to next round
-    function nextRound(matches: MatchResult[]): MatchResult[] {
+    // 8 best 3rd-placed teams
+    const thirdGroups: Record<number, string> = {
+      74: 'D', 77: 'F', 79: 'E', 80: 'K',
+      81: 'B', 82: 'I', 85: 'J', 87: 'L',
+    }
+    const assignedThird = new Map<number, TeamScores>()
+    for (const [mid, g] of Object.entries(thirdGroups)) {
+      const third = groupRanked.get(g)?.[2]
+      if (third) assignedThird.set(Number(mid), third)
+    }
+
+    // Official 2026 bracket: 73–88 = 16 round-1 matches
+    const matchDefs: Record<number, [string, string]> = {
+      73: ['A2', 'B2'],                    // r32-0
+      74: ['E1', assignedThird.get(74)?.teamId ?? ''],
+      75: ['F1', 'C2'],                    // r32-?
+      76: ['C1', 'F2'],
+      77: ['I1', assignedThird.get(77)?.teamId ?? ''],
+      78: ['E2', 'I2'],
+      79: ['A1', assignedThird.get(79)?.teamId ?? ''],
+      80: ['L1', assignedThird.get(80)?.teamId ?? ''],
+      81: ['D1', assignedThird.get(81)?.teamId ?? ''],
+      82: ['G1', assignedThird.get(82)?.teamId ?? ''],
+      83: ['K2', 'L2'],
+      84: ['H1', 'J2'],
+      85: ['B1', assignedThird.get(85)?.teamId ?? ''],
+      86: ['J1', 'H2'],
+      87: ['K1', assignedThird.get(87)?.teamId ?? ''],
+      88: ['D2', 'G2'],
+    }
+    const resolveSlot = (s: string): TeamScores | undefined =>
+      /^[A-L][12]$/.test(s) ? slotMap.get(s) : scores.find(t => t.teamId === s)
+
+    const pairs: [TeamScores, TeamScores][] = []
+    for (let m = 73; m <= 88; m++) {
+      const def = matchDefs[m]
+      if (!def) continue
+      const [hSlot, aSlot] = def
+      const h = resolveSlot(hSlot)
+      const a = resolveSlot(aSlot)
+      if (h && a) pairs.push([h, a])
+    }
+
+    // Resolve winner for a given pair
+    const settlePair = (home: TeamScores, away: TeamScores, isR32: boolean): MatchResult => {
+      let winner: string
+      let label: string
+      let actualScore: string | undefined
+
+      if (isR32) {
+        const key = `${home.teamId}-${away.teamId}`
+        const r32id = pairToR32.get(key) || pairToR32.get(`${away.teamId}-${home.teamId}`)
+        if (r32id && LIVE_SCORES[r32id]) {
+          actualScore = LIVE_SCORES[r32id]
+          const [hS, aS] = actualScore.split('-').map(Number)
+          if (hS > aS) winner = home.teamId
+          else if (aS > hS) winner = away.teamId
+          else {
+            // 平局 → 点球决胜
+            const kw = KNOCKOUT_WINNERS[r32id]
+            winner = kw?.winner === 'home' ? home.teamId : away.teamId
+          }
+          label = actualScore
+        } else {
+          winner = home.total >= away.total ? home.teamId : away.teamId
+          label = '预测'
+        }
+      } else {
+        winner = home.total >= away.total ? home.teamId : away.teamId
+        label = '预测'
+      }
+      return { home, away, winner, label, actualScore }
+    }
+
+    const r32 = pairs.map(p => settlePair(p[0], p[1], true))
+
+    // Subsequent rounds: winners face each other in bracket order
+    const nextRound = (matches: MatchResult[]) => {
       const next: MatchResult[] = []
       for (let i = 0; i < matches.length; i += 2) {
-        const a = matches[i]
-        const b = matches[i + 1]
+        const a = matches[i]; const b = matches[i + 1]
         if (!a || !b) continue
-        const homeId = a.winner
-        const awayId = b.winner
-        const home = homeId ? resolve(homeId) : undefined
-        const away = awayId ? resolve(awayId) : undefined
-        let winner: string | null = null
-        if (home && away) {
-          winner = home.total >= away.total ? homeId : awayId
-        } else if (home) {
-          winner = homeId
-        } else if (away) {
-          winner = awayId
-        }
-        next.push({ home, away, winner, isActual: false })
+        const h = smap.get(a.winner); const aw = smap.get(b.winner)
+        if (h && aw) next.push(settlePair(h, aw, false))
       }
       return next
     }
 
-    const round2 = nextRound(round1)
-    const round3 = nextRound(round2)
-    const round4 = nextRound(round3)
-    const round5 = nextRound(round4)  // final
-
-    return [round1, round2, round3, round4, round5].filter(r => r.length > 0)
-  }, [scores])
+    return [r32, nextRound(r32), nextRound(nextRound(r32)), nextRound(nextRound(nextRound(r32))), nextRound(nextRound(nextRound(nextRound(r32))))].filter(r => r.length > 0)
+  }, [scores, standings])
 
   const roundNames = ['32 强', '16 强', '四分之一决赛', '半决赛', '决赛']
 
@@ -121,63 +173,51 @@ export function BracketView({ scores }: Props) {
     <div className="space-y-8">
       {bracket.map((round, ri) => {
         const isLast = ri === bracket.length - 1
+        const isR32 = ri === 0
 
         return (
           <div key={ri} className="bg-slate-800/60 border border-slate-700 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-4">
               <span className={`text-sm font-bold px-2 py-0.5 rounded ${
-                isLast
-                  ? 'bg-yellow-500/20 text-yellow-400'
-                  : 'bg-blue-500/20 text-blue-400'
-              }`}>
-                {roundNames[ri] || `第${ri + 1}轮`}
-              </span>
+                isLast ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400'
+              }`}>{roundNames[ri]}</span>
               <span className="text-xs text-slate-500">{round.length} 场</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-              {ri === 0
-                ? /* Round 1: show match cards with score vs prediction */
-                  round.map((m, i) => {
-                    const { home, away, winner, isActual, actualScore } = m
-                    if (!home || !away) return null
-                    const homeWon = winner === home.teamId
-                    const r32id = `r32-${i}`
+              {isR32
+                ? round.map((m: MatchResult, i: number) => {
+                    const homeWon = m.winner === m.home.teamId
                     return (
-                      <div key={r32id} className="bg-slate-900/40 border border-slate-700 rounded-lg px-3 py-2">
+                      <div key={`r32-${i}`} className="bg-slate-900/40 border border-slate-700 rounded-lg px-3 py-2">
                         <div className="flex items-center justify-between gap-1">
                           <span className={`flex items-center gap-1.5 min-w-0 flex-1 ${homeWon ? 'text-green-400' : 'text-white/70'}`}>
-                            <FlagImg code={home.flagCode} size={18} />
-                            <span className="text-xs font-medium truncate">{home.teamNameCN}</span>
+                            <FlagImg code={m.home.flagCode} size={18} />
+                            <span className="text-xs font-medium truncate">{m.home.teamNameCN}</span>
                             {homeWon && <span className="text-green-400 text-[10px]">✓</span>}
                           </span>
 
-                          {actualScore
-                            ? <span className={`font-bold text-sm font-mono mx-1.5 shrink-0 ${isActual ? 'text-green-400' : 'text-orange-400'}`}>
-                                {actualScore}
-                              </span>
+                          {m.actualScore
+                            ? <span className="font-bold text-sm font-mono mx-1.5 shrink-0 text-green-400">{m.actualScore}</span>
                             : <span className="text-slate-600 text-xs font-mono mx-1.5 shrink-0">vs</span>
                           }
 
-                          <span className={`flex items-center gap-1.5 min-w-0 flex-1 justify-end ${!homeWon && winner ? 'text-green-400' : 'text-white/70'}`}>
-                            {!homeWon && winner && <span className="text-green-400 text-[10px]">✓</span>}
-                            <span className="text-xs font-medium truncate">{away.teamNameCN}</span>
-                            <FlagImg code={away.flagCode} size={18} />
+                          <span className={`flex items-center gap-1.5 min-w-0 flex-1 justify-end ${!homeWon ? 'text-green-400' : 'text-white/70'}`}>
+                            {!homeWon && <span className="text-green-400 text-[10px]">✓</span>}
+                            <span className="text-xs font-medium truncate">{m.away.teamNameCN}</span>
+                            <FlagImg code={m.away.flagCode} size={18} />
                           </span>
                         </div>
                         <div className="flex justify-between mt-1 text-[10px] text-slate-600 font-mono">
-                          <span>{home.total.toFixed(0)}</span>
-                          <span>{isActual ? '实际比分' : '预测'}</span>
-                          <span>{away.total.toFixed(0)}</span>
+                          <span>{m.home.total.toFixed(0)}</span>
+                          <span>{m.actualScore ? '实际比分' : m.label}</span>
+                          <span>{m.away.total.toFixed(0)}</span>
                         </div>
                       </div>
                     )
                   })
-                : /* Rounds 2+: show winners as team cards */
-                  round.map((m, i) => {
-                    const { home, away, winner } = m
-                    if (!winner) return null
-                    const t = resolve(winner)
+                : round.map((m: MatchResult, i: number) => {
+                    const t = smap.get(m.winner)
                     if (!t) return null
                     return (
                       <div key={`r${ri}-${i}`}
@@ -189,18 +229,10 @@ export function BracketView({ scores }: Props) {
                       >
                         <FlagImg code={t.flagCode} size={22} />
                         <div className="min-w-0 flex-1">
-                          <span className="text-sm font-medium text-white truncate block">
-                            {t.teamNameCN}
-                          </span>
-                          {home && away && (
-                            <span className="text-[10px] text-slate-500 font-mono">
-                              {home.teamNameCN} vs {away.teamNameCN}
-                            </span>
-                          )}
+                          <span className="text-sm font-medium text-white truncate block">{t.teamNameCN}</span>
+                          <span className="text-[10px] text-slate-500 font-mono">{m.home.teamNameCN} vs {m.away.teamNameCN}</span>
                         </div>
-                        <span className="text-xs font-mono font-bold text-slate-400">
-                          {t.total.toFixed(0)}
-                        </span>
+                        <span className="text-xs font-mono font-bold text-slate-400">{t.total.toFixed(0)}</span>
                         {ri + 1 < bracket.length && <span className="text-green-400 text-xs ml-1">✓</span>}
                         {ri + 1 >= bracket.length && <span className="text-yellow-400 text-xs ml-1">🏆</span>}
                       </div>
@@ -211,23 +243,6 @@ export function BracketView({ scores }: Props) {
           </div>
         )
       })}
-
-      {/* Champion */}
-      {bracket.length > 0 && (() => {
-        const lastRound = bracket[bracket.length - 1]
-        if (lastRound.length !== 1) return null
-        const final = lastRound[0]
-        if (!final.winner) return null
-        const c = resolve(final.winner)
-        return c ? (
-          <div className="bg-gradient-to-r from-yellow-600/20 to-amber-600/20 border border-yellow-500/50 rounded-xl p-6 text-center">
-            <p className="text-sm text-yellow-400 mb-2">🏆 预测冠军</p>
-            <FlagImg code={c.flagCode} size={40} className="mr-3" />
-            <span className="text-2xl font-bold text-white">{c.teamNameCN}</span>
-            <p className="text-slate-400 mt-1">{c.teamName} — 综合评分 {c.total.toFixed(1)}</p>
-          </div>
-        ) : null
-      })()}
     </div>
   )
 }
