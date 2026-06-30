@@ -4,8 +4,6 @@
 import { useState, useMemo } from 'react'
 import { useTeamData } from '../hooks/useTeamData'
 import { computeScores, DEFAULT_WEIGHTS, type Weights } from '../engine/scorer'
-import { computeAllStandings } from '../engine/standings'
-import { LIVE_SCORES } from '../data/results'
 import { WeightPanel } from '../components/WeightPanel'
 import { BracketView } from '../components/BracketView'
 
@@ -17,15 +15,6 @@ export function KnockoutPage() {
     () => computeScores(teams, weights),
     [teams, weights],
   )
-
-  const standings = useMemo(() => {
-    let liveScores: Record<string, string> = {}
-    try {
-      liveScores = JSON.parse(localStorage.getItem('wc26-scores') || '{}')
-    } catch {}
-    liveScores = { ...LIVE_SCORES, ...liveScores }
-    return computeAllStandings(scores, liveScores)
-  }, [scores])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -39,7 +28,7 @@ export function KnockoutPage() {
           <WeightPanel weights={weights} onChange={setWeights} />
         </div>
         <div className="lg:col-span-3">
-          <BracketView scores={scores} standings={standings} />
+          <BracketView scores={scores} />
         </div>
       </div>
     </div>
