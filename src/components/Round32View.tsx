@@ -11,7 +11,7 @@ import { useMemo } from 'react'
 import type { TeamScores } from '../engine/scorer'
 import type { GroupStanding } from '../engine/standings'
 import { predictFullKnockoutResult } from '../engine/poisson'
-import { KNOCKOUT_PREDICTIONS, KNOCKOUT_WINNERS, knockoutModelTag } from '../data/results'
+import { LIVE_SCORES, KNOCKOUT_PREDICTIONS, KNOCKOUT_WINNERS, knockoutModelTag } from '../data/results'
 
 import { FlagImg } from './FlagImg'
 
@@ -178,20 +178,73 @@ export function Round32View({ scores, standings }: Props) {
           const frozenW = KNOCKOUT_WINNERS[r32Key]
           const tag = knockoutModelTag(r32Key)
 
-          // Use frozen winner + stage data for consistency across pages
-          const homeWon = frozenW ? frozenW.winner === 'home' : true
-          const awayWon = frozenW ? frozenW.winner === 'away' : false
-          const hasExtra = frozenW?.hasExtraTime ?? false
-          const hasPens = frozenW?.hasPenalties ?? false
-          const displayScore = frozenPred || '0-0'
+          // 实际结果（如有）
+          const actualScore = LIVE_SCORES[r32Key]
+          const hasActual = !!actualScore
 
-          // Live engine still provides extra‑time / penalty score lines
+          // 决定晋级方和显示用比分
+          let homeWon: boolean
+          let awayWon: boolean
+          let displayScore: string
+          let hasExtra = false
+          let hasPens = false
+          let isCorrect: boolean | null = null   // null=未赛, true=预测对, false=预测错
+          let actualDetail = ''
+
+          if (hasActual) {
+            displayScore = actualScore!
+            const [hS, aS] = actualScore!.split('-').map(Number)
+            if (hS > aS) { homeWon = true; awayWon = false }
+            else if (aS > hS) { homeWon = false; awayWon = true }
+            else {
+              // 平局 → 点球决胜
+              const kw = KNOCKOUT_WINNERS[r32Key]
+              homeWon = kw?.winner === 'home'
+              awayWon = kw?.winner === 'away'
+              hasPens = true
+              hasExtra = true
+              actualDetail = ' (点球)'
+            }
+            // 预测准确性
+            if (frozenPred) {
+              const [pH, pA] = frozenPred.split('-').map(Number)
+              const actualWinner = hS > aS ? 'home' : aS > hS ? 'away' : 'draw'
+              const predWinner = pH > pA ? 'home' : pA > pH ? 'away' : 'draw'
+              if (actualWinner === 'draw' && predWinner === 'draw') {
+                // 都预测平局→点球，看方向
+                isCorrect = frozenW?.winner === (hS > aS ? 'home' : 'away') ||
+                            (hS === aS && frozenW?.winner !== undefined) ? true : false
+              } else {
+                isCorrect = actualWinner === predWinner
+              }
+            }
+          } else {
+            // 未赛：使用尉缭子预测
+            homeWon = frozenW ? frozenW.winner === 'home' : true
+            awayWon = frozenW ? frozenW.winner === 'away' : false
+            hasExtra = frozenW?.hasExtraTime ?? false
+            hasPens = frozenW?.hasPenalties ?? false
+            displayScore = frozenPred || '0-0'
+          }
+
+          // 加时/点球信息只在实际比赛且有点球时才从 KNOCKOUT_WINNERS 读取
+          if (hasActual) {
+            const kw = KNOCKOUT_WINNERS[r32Key]
+            if (kw) {
+              hasExtra = kw.hasExtraTime
+              hasPens = kw.hasPenalties
+            }
+          }
+
+          // Live engine for extra-time/penalty score lines in predictions
           const kr = predictFullKnockoutResult(m.home.total, m.away.total)
 
           return (
             <div
               key={m.id}
-              className="bg-slate-800/60 border border-slate-700 rounded-xl p-4 hover:border-slate-500 transition-colors"
+              className={`bg-slate-800/60 border rounded-xl p-4 transition-colors ${
+                hasActual ? 'border-green-700/40' : 'border-slate-700 hover:border-slate-500'
+              }`}
             >
               {/* Date + venue header */}
               <div className="flex items-center justify-between mb-3 text-xs text-slate-400">
@@ -211,17 +264,17 @@ export function Round32View({ scores, standings }: Props) {
                   {homeWon && <span className="text-green-400 text-xs flex-shrink-0">✓</span>}
                 </div>
 
-                {/* Predicted score — multiline breakdown */}
+                {/* Score display */}
                 <div className="flex-shrink-0 px-3 py-1 bg-slate-900/60 rounded-lg border border-slate-600 text-center min-w-[4.5rem]">
-                  <span className={`font-bold text-base font-mono leading-tight ${homeWon ? 'text-green-400' : 'text-orange-400'}`}>
+                  <span className={`font-bold text-base font-mono leading-tight ${hasActual ? 'text-green-400' : homeWon ? 'text-green-400' : 'text-orange-400'}`}>
                     {displayScore}
                   </span>
-                  {hasExtra && kr.afterExtraTime && (
+                  {hasExtra && !hasActual && kr.afterExtraTime && (
                     <span className="block text-[10px] text-slate-400 font-mono leading-tight">
                       加时 {kr.afterExtraTime[0]}-{kr.afterExtraTime[1]}
                     </span>
                   )}
-                  {hasPens && kr.penalties && (
+                  {hasPens && !hasActual && kr.penalties && (
                     <span className="block text-[10px] text-yellow-400 font-mono leading-tight">
                       点球 {kr.penalties[0]}-{kr.penalties[1]}
                     </span>
@@ -241,8 +294,8 @@ export function Round32View({ scores, standings }: Props) {
                 </div>
               </div>
 
-              {/* Group provenance + winner line */}
-              <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500">
+              {/* Group provenance + result line */}
+              <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500 flex-wrap">
                 <span>{m.home.group}组 第{['一', '二', '三', '四'][
                   ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'].indexOf(m.home.group)
                 ]} vs {m.away.group}组 第{['一', '二', '三', '四'][
@@ -257,10 +310,24 @@ export function Round32View({ scores, standings }: Props) {
                   m.away.total >= 70 ? 'text-green-400' : 'text-slate-400'
                 }`}>{m.away.total.toFixed(0)}</span>
                 <span className="text-slate-600">·</span>
-                <span className={`text-xs font-semibold ${homeWon ? 'text-green-400' : 'text-orange-400'}`}>
-                  {homeWon ? m.home.teamNameCN : m.away.teamNameCN} 晋级
-                  {hasPens ? ' (点球)' : hasExtra ? ' (加时)' : ''}
-                </span>
+                {hasActual ? (
+                  <span className={`text-xs font-semibold ${homeWon ? 'text-green-400' : 'text-orange-400'}`}>
+                    {homeWon ? m.home.teamNameCN : m.away.teamNameCN} 晋级{actualDetail}
+                    {isCorrect !== null && (
+                      <span className={`ml-1 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                        {isCorrect ? '✅' : '❌'}
+                      </span>
+                    )}
+                    {frozenPred && hasActual && (
+                      <span className="ml-1 text-slate-500 font-normal">(预测 {frozenPred})</span>
+                    )}
+                  </span>
+                ) : (
+                  <span className={`text-xs font-semibold ${homeWon ? 'text-green-400' : 'text-orange-400'}`}>
+                    {homeWon ? m.home.teamNameCN : m.away.teamNameCN} 晋级
+                    {hasPens ? ' (点球)' : hasExtra ? ' (加时)' : ''}
+                  </span>
+                )}
               </div>
             </div>
           )
