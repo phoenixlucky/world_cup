@@ -74,6 +74,7 @@ const R32_MATCHUPS = [
 const r32Lookup = {}
 R32_MATCHUPS.forEach(([home, away], i) => {
   r32Lookup[home + '-' + away] = `r32-${i}`
+})
 
 function getTeamId(homeAbbr, awayAbbr) {
   const homeId = ESPN_TEAM_MAP[homeAbbr]
