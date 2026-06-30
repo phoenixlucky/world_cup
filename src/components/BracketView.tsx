@@ -4,10 +4,38 @@
  * Simplified view showing the bracket structure with predicted winners
  * based on team scores.
  */
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import type { TeamScores } from '../engine/scorer'
 import type { GroupStanding } from '../engine/standings'
+import { LIVE_SCORES, KNOCKOUT_WINNERS } from '../data/results'
 import { FlagImg } from './FlagImg'
+
+// 32 强对阵表: [homeId, awayId] → r32-N
+const R32_MATCHUPS: [string, string][] = [
+  ['south-africa', 'canada'],
+  ['germany', 'paraguay'],
+  ['netherlands', 'morocco'],
+  ['brazil', 'japan'],
+  ['france', 'sweden'],
+  ['ivory-coast', 'norway'],
+  ['mexico', 'ecuador'],
+  ['england', 'dr-congo'],
+  ['usa', 'bosnia'],
+  ['belgium', 'senegal'],
+  ['portugal', 'croatia'],
+  ['spain', 'austria'],
+  ['switzerland', 'algeria'],
+  ['argentina', 'cape-verde'],
+  ['colombia', 'ghana'],
+  ['australia', 'egypt'],
+]
+
+// Build team-pair → r32-N lookup
+const teamPairToR32 = new Map<string, string>()
+R32_MATCHUPS.forEach(([h, a], i) => {
+  teamPairToR32.set(`${h}-${a}`, `r32-${i}`)
+  teamPairToR32.set(`${a}-${h}`, `r32-${i}`) // either order
+})
 
 interface Props {
   scores: TeamScores[]
@@ -112,7 +140,7 @@ export function BracketView({ scores, standings }: Props) {
     }
   }
 
-  // Simulate rounds: winner decided by comprehensive strength (total score)
+  // Simulate rounds: use actual r32 results where available, else predict by strength
   const predictedChampion = useMemo(() => {
     const smap = new Map(scores.map(s => [s.teamId, s]))
     let currentRound = bracket.sorted.map(s => s.teamId)
@@ -120,11 +148,44 @@ export function BracketView({ scores, standings }: Props) {
 
     while (currentRound.length > 1) {
       const nextRound: string[] = []
+      const isFirstRound = currentRound.length === 32
       for (let i = 0; i < currentRound.length; i += 2) {
         const a = smap.get(currentRound[i])
         const b = smap.get(currentRound[i + 1])
         if (a && b) {
-          nextRound.push(a.total >= b.total ? a.teamId : b.teamId)
+          let winner: string | null = null
+          // First round: use actual result from LIVE_SCORES if available
+          if (isFirstRound) {
+            const pairKey = `${a.teamId}-${b.teamId}`
+            const r32id = teamPairToR32.get(pairKey)
+            if (r32id) {
+              const actual = LIVE_SCORES[r32id]
+              if (actual) {
+                const [hS, aS] = actual.split('-').map(Number)
+                // Determine which team is home in the r32 matchup
+                const matchup = R32_MATCHUPS.find(([h]) => h === a.teamId || h === b.teamId)
+                if (matchup) {
+                  const homeId = matchup[0]
+                  const awayId = matchup[1]
+                  const homeIsA = a.teamId === homeId
+                  const homeScore = homeIsA ? hS : aS
+                  const awayScore = homeIsA ? aS : hS
+                  if (homeScore > awayScore) winner = homeId
+                  else if (awayScore > homeScore) winner = awayId
+                  else {
+                    // 平局 → 点球决胜：取 KNOCKOUT_WINNERS 或更高评分球队
+                    const kw = KNOCKOUT_WINNERS[r32id]
+                    if (kw) winner = kw.winner === 'home' ? homeId : awayId
+                    else winner = a.total >= b.total ? a.teamId : b.teamId
+                  }
+                }
+              }
+            }
+          }
+          if (!winner) {
+            winner = a.total >= b.total ? a.teamId : b.teamId
+          }
+          nextRound.push(winner)
         } else {
           nextRound.push(a ? a.teamId : b!.teamId)
         }
@@ -137,6 +198,18 @@ export function BracketView({ scores, standings }: Props) {
   }, [bracket, scores])
 
   const smap = new Map(scores.map(s => [s.teamId, s]))
+
+  // Lookup actual r32 scores for display on bracket
+  const matchScores = useMemo(() => {
+    const scores = new Map<number, string>()
+    for (let i = 0; i < bracket.pairs.length; i++) {
+      const [home, away] = bracket.pairs[i]
+      const r32id = teamPairToR32.get(`${home.teamId}-${away.teamId}`) ||
+                    teamPairToR32.get(`${away.teamId}-${home.teamId}`)
+      if (r32id && LIVE_SCORES[r32id]) scores.set(i, LIVE_SCORES[r32id])
+    }
+    return scores
+  }, [bracket.pairs])
 
   return (
     <div className="space-y-8">
@@ -157,7 +230,54 @@ export function BracketView({ scores, standings }: Props) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-              {round.map(teamId => {
+              {ri === 0
+                // Round 1 (32强): show match pairs with actual scores
+                ? (() => {
+                    const pairs: ReactNode[] = []
+                    for (let i = 0; i < round.length; i += 2) {
+                      const homeId = round[i]
+                      const awayId = round[i + 1]
+                      const home = smap.get(homeId)
+                      const away = smap.get(awayId)
+                      if (!home || !away) continue
+                      const pairIdx = i / 2
+                      const score = matchScores.get(pairIdx)
+                      const isWinner = predictedChampion.rounds[ri + 1]?.includes(homeId) ||
+                                       predictedChampion.rounds[ri + 1]?.includes(awayId)
+                      const winnerId = isWinner
+                        ? (predictedChampion.rounds[ri + 1]?.includes(homeId) ? homeId : awayId)
+                        : null
+
+                      pairs.push(
+                        <div key={i} className="bg-slate-900/40 border border-slate-700 rounded-lg px-3 py-2">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className={`flex items-center gap-1.5 min-w-0 flex-1 ${winnerId === homeId ? 'text-green-400' : 'text-white/70'}`}>
+                              <FlagImg code={home.flagCode} size={18} />
+                              <span className="text-xs font-medium truncate">{home.teamNameCN}</span>
+                              {winnerId === homeId && <span className="text-green-400 text-[10px]">✓</span>}
+                            </span>
+                            {score
+                              ? <span className="text-green-400 font-bold text-sm font-mono mx-1.5 shrink-0">{score}</span>
+                              : <span className="text-slate-600 text-xs font-mono mx-1.5 shrink-0">vs</span>
+                            }
+                            <span className={`flex items-center gap-1.5 min-w-0 flex-1 justify-end ${winnerId === awayId ? 'text-green-400' : 'text-white/70'}`}>
+                              {winnerId === awayId && <span className="text-green-400 text-[10px]">✓</span>}
+                              <span className="text-xs font-medium truncate">{away.teamNameCN}</span>
+                              <FlagImg code={away.flagCode} size={18} />
+                            </span>
+                          </div>
+                          {home.total !== undefined && away.total !== undefined && (
+                            <div className="flex justify-between mt-1 text-[10px] text-slate-600 font-mono">
+                              <span>{home.total.toFixed(0)}</span>
+                              <span>{away.total.toFixed(0)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    }
+                    return pairs
+                  })()
+                : round.map(teamId => {
                 const t = smap.get(teamId)
                 if (!t) return null
                 const isWinner = isLast || (
