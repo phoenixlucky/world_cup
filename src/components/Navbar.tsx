@@ -13,6 +13,7 @@ const links = [
   { to: '/prediction', label: '🔮 冠军预测', title: '蒙特卡洛夺冠概率' },
   { to: '/schedule', label: '📅 赛程', title: '比赛日程查询' },
   { to: '/accuracy', label: '📊 准确性', title: '预测准确性统计' },
+  { to: '/knockout-accuracy', label: '⚔️ 淘汰赛准确性', title: '尉缭子分析法32强准确性' },
   { to: '/changelog', label: '📜 更新日志', title: '算法更新记录' },
   { to: '/world-cup-perf', label: '🏅 世界杯表现', title: '各队表现评分' },
   { to: '/third-place', label: '🥉 小组第三', title: '小组第三排行榜' },

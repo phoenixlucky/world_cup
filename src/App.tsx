@@ -13,6 +13,7 @@ import { WorldCupPerfPage } from './pages/WorldCupPerfPage'
 import { ChangelogPage } from './pages/ChangelogPage'
 import { ThirdPlacePage } from './pages/ThirdPlacePage'
 import { Round32Page } from './pages/Round32Page'
+import { KnockoutAccuracyPage } from './pages/KnockoutAccuracyPage'
 
 // Vite's base path (for GitHub Pages: /repo-name/)
 const basePath = import.meta.env.BASE_URL || '/'
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/world-cup-perf" element={<WorldCupPerfPage />} />
           <Route path="/changelog" element={<ChangelogPage />} />
           <Route path="/third-place" element={<ThirdPlacePage />} />
+          <Route path="/knockout-accuracy" element={<KnockoutAccuracyPage />} />
         </Routes>
       </div>
     </BrowserRouter>
