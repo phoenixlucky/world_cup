@@ -11,7 +11,7 @@ import { useMemo } from 'react'
 import type { TeamScores } from '../engine/scorer'
 import type { GroupStanding } from '../engine/standings'
 import { predictFullKnockoutResult } from '../engine/poisson'
-import { LIVE_SCORES, KNOCKOUT_PREDICTIONS, KNOCKOUT_WINNERS, knockoutModelTag } from '../data/results'
+import { LIVE_SCORES, KNOCKOUT_PREDICTIONS, KNOCKOUT_WINNERS, R32_PENALTY_WINNERS, knockoutModelTag } from '../data/results'
 
 import { FlagImg } from './FlagImg'
 
@@ -198,9 +198,9 @@ export function Round32View({ scores, standings }: Props) {
             else if (aS > hS) { homeWon = false; awayWon = true }
             else {
               // 平局 → 点球决胜
-              const kw = KNOCKOUT_WINNERS[r32Key]
-              homeWon = kw?.winner === 'home'
-              awayWon = kw?.winner === 'away'
+              const penWinner = R32_PENALTY_WINNERS[r32Key] || KNOCKOUT_WINNERS[r32Key]?.winner
+              homeWon = penWinner === 'home'
+              awayWon = penWinner === 'away'
               hasPens = true
               hasExtra = true
               actualDetail = ' (点球)'

@@ -122,6 +122,12 @@ export const LIVE_SCORES: Record<string, string> = {
   'r32-3': '2-1',           // 巴西 2-1 日本 ✅
 }
 
+/** 实际点球胜方（仅已完赛且常规时间/加时平局的比赛）
+ *  key: r32-N, value: 'home' | 'away' 表示实际点球晋级方 */
+export const R32_PENALTY_WINNERS: Record<string, 'home' | 'away'> = {
+  'r32-1': 'away',   // 德国1-1巴拉圭 → 巴拉圭(客)点球4-3晋级
+}
+
 /** 封存预测比分: matchId → "预测主场-预测客场"
  *  预测在比赛前2天冻结，算法更新不会改写已赛比赛的预测。 */
 export const FROZEN_PREDICTIONS: Record<string, string> = {

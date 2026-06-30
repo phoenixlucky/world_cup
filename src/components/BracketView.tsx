@@ -8,7 +8,7 @@
 import { useMemo } from 'react'
 import type { TeamScores } from '../engine/scorer'
 import type { GroupStanding } from '../engine/standings'
-import { LIVE_SCORES, KNOCKOUT_WINNERS } from '../data/results'
+import { LIVE_SCORES, KNOCKOUT_WINNERS, R32_PENALTY_WINNERS } from '../data/results'
 import { FlagImg } from './FlagImg'
 
 // 32强team-pair → r32-N reverse mapping
@@ -130,9 +130,9 @@ export function BracketView({ scores, standings }: Props) {
           if (hS > aS) winner = home.teamId
           else if (aS > hS) winner = away.teamId
           else {
-            // 平局 → 点球决胜
-            const kw = KNOCKOUT_WINNERS[r32id]
-            winner = kw?.winner === 'home' ? home.teamId : away.teamId
+            // 平局 → 点球决胜：查实际点球胜方，没有则用预测
+            const penWinner = R32_PENALTY_WINNERS[r32id] || KNOCKOUT_WINNERS[r32id]?.winner
+            winner = penWinner === 'home' ? home.teamId : away.teamId
           }
           label = actualScore
         } else {
