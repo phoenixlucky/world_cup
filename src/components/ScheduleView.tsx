@@ -778,8 +778,8 @@ export function ScheduleView() {
 
     // Official 2026 bracket topology: which r32 indices feed into each R16 match
     const r16Topology: [string, string][] = [
-      [r32Winner('r32-1')!, r32Winner('r32-4')!],
-      [r32Winner('r32-0')!, r32Winner('r32-3')!],
+      [r32Winner('r32-0')!, r32Winner('r32-3')!],  // Match 90: Canada vs Morocco
+      [r32Winner('r32-1')!, r32Winner('r32-4')!],  // Match 89: Paraguay vs France
       [r32Winner('r32-2')!, r32Winner('r32-5')!],
       [r32Winner('r32-6')!, r32Winner('r32-7')!],
       [r32Winner('r32-10')!, r32Winner('r32-11')!],
