@@ -44,7 +44,7 @@ interface VenueInfo { venue: string; city: string; utcOffset: number }
 const venueMap: Record<string, VenueInfo> = {
   '阿兹特克体育场':     { venue: '阿兹特克体育场',   city: '墨西哥城',   utcOffset: -6 },
   '阿克伦球场':         { venue: '阿克伦球场',       city: '萨波潘',     utcOffset: -6 },
-  '梅赛德斯-宾士体育场': { venue: '梅赛德斯-宾士体育场', city: '亚特兰大', utcOffset: -4 },
+  '梅赛德斯-奔驰体育场': { venue: '梅赛德斯-奔驰体育场', city: '亚特兰大', utcOffset: -4 },
   'SoFi体育场':         { venue: 'SoFi体育场',       city: '英格尔伍德', utcOffset: -7 },
   'BMO球场':            { venue: 'BMO球场',          city: '多伦多',     utcOffset: -4 },
   '李维斯体育场':       { venue: '李维斯体育场',     city: '圣克拉拉',   utcOffset: -7 },
@@ -86,7 +86,7 @@ const groupMatches: Record<string, RawMatch[]> = {
   A: [
     ['6月11日', '13:00', '阿兹特克体育场',     'mexico', 'south-africa'],
     ['6月11日', '20:00', '阿克伦球场',         'south-korea', 'czech-republic'],
-    ['6月18日', '12:00', '梅赛德斯-宾士体育场', 'czech-republic', 'south-africa'],
+    ['6月18日', '12:00', '梅赛德斯-奔驰体育场', 'czech-republic', 'south-africa'],
     ['6月18日', '19:00', '阿克伦球场',         'mexico', 'south-korea'],
     ['6月24日', '19:00', '阿兹特克体育场',     'czech-republic', 'mexico'],
     ['6月24日', '19:00', 'BBVA体育场',         'south-africa', 'south-korea'],
@@ -105,7 +105,7 @@ const groupMatches: Record<string, RawMatch[]> = {
     ['6月19日', '18:00', '吉列体育场',         'scotland', 'morocco'],
     ['6月19日', '21:00', '林肯金融球场',       'brazil', 'haiti'],
     ['6月24日', '18:00', '硬石体育场',         'scotland', 'brazil'],
-    ['6月24日', '18:00', '梅赛德斯-宾士体育场', 'morocco', 'haiti'],
+    ['6月24日', '18:00', '梅赛德斯-奔驰体育场', 'morocco', 'haiti'],
   ],
   D: [
     ['6月12日', '18:00', 'SoFi体育场',         'usa', 'paraguay'],
@@ -140,9 +140,9 @@ const groupMatches: Record<string, RawMatch[]> = {
     ['6月26日', '20:00', '卑诗体育馆',         'new-zealand', 'belgium'],
   ],
   H: [
-    ['6月15日', '12:00', '梅赛德斯-宾士体育场', 'spain', 'cape-verde'],
+    ['6月15日', '12:00', '梅赛德斯-奔驰体育场', 'spain', 'cape-verde'],
     ['6月15日', '18:00', '硬石体育场',         'saudi-arabia', 'uruguay'],
-    ['6月21日', '12:00', '梅赛德斯-宾士体育场', 'spain', 'saudi-arabia'],
+    ['6月21日', '12:00', '梅赛德斯-奔驰体育场', 'spain', 'saudi-arabia'],
     ['6月21日', '18:00', '硬石体育场',         'uruguay', 'cape-verde'],
     ['6月26日', '19:00', 'NRG体育场',          'cape-verde', 'saudi-arabia'],
     ['6月26日', '18:00', '阿克伦球场',         'uruguay', 'spain'],
@@ -169,7 +169,7 @@ const groupMatches: Record<string, RawMatch[]> = {
     ['6月23日', '12:00', 'NRG体育场',          'portugal', 'uzbekistan'],
     ['6月23日', '20:00', '阿克伦球场',         'colombia', 'dr-congo'],
     ['6月27日', '19:30', '硬石体育场',         'colombia', 'portugal'],
-    ['6月27日', '19:30', '梅赛德斯-宾士体育场', 'dr-congo', 'uzbekistan'],
+    ['6月27日', '19:30', '梅赛德斯-奔驰体育场', 'dr-congo', 'uzbekistan'],
   ],
   L: [
     ['6月17日', '15:00', 'AT&T体育场',         'england', 'croatia'],
@@ -355,7 +355,7 @@ function buildAllMatches(): Match[] {
     // Match 79: Mexico vs Ecuador — June 30, 19:00 UTC-6, Estadio Azteca
     { date: '6月30日', localTime: '19:00', venueKey: '阿兹特克体育场' },
     // Match 80: England vs DR Congo — July 1, 12:00 UTC-4, Mercedes-Benz Stadium
-    { date: '7月1日', localTime: '12:00', venueKey: '梅赛德斯-宾士体育场' },
+    { date: '7月1日', localTime: '12:00', venueKey: '梅赛德斯-奔驰体育场' },
     // Match 81: USA vs Bosnia — July 1, 17:00 UTC-7, Levi's Stadium
     { date: '7月1日', localTime: '17:00', venueKey: '李维斯体育场' },
     // Match 82: Belgium vs Senegal — July 1, 13:00 UTC-7, Lumen Field
@@ -366,12 +366,12 @@ function buildAllMatches(): Match[] {
     { date: '7月2日', localTime: '19:00', venueKey: 'BMO球场' },
     // Match 85: Switzerland vs Algeria — July 2, 20:00 UTC-7, BC Place
     { date: '7月2日', localTime: '20:00', venueKey: '卑诗体育馆' },
-    // Match 86: Argentina vs Cape Verde — July 3, 13:00 UTC-5, AT&T Stadium
-    { date: '7月3日', localTime: '13:00', venueKey: 'AT&T体育场' },
-    // Match 87: Colombia vs Ghana — July 3, 18:00 UTC-4, Hard Rock Stadium
+    // Match 86: Argentina vs Cape Verde — July 3, 18:00 UTC-4, Hard Rock Stadium
     { date: '7月3日', localTime: '18:00', venueKey: '硬石体育场' },
-    // Match 88: Australia vs Egypt — July 3, 20:30 UTC-5, Arrowhead Stadium
+    // Match 87: Colombia vs Ghana — July 3, 20:30 UTC-5, Arrowhead Stadium
     { date: '7月3日', localTime: '20:30', venueKey: '箭頭体育场' },
+    // Match 88: Australia vs Egypt — July 3, 13:00 UTC-5, AT&T Stadium
+    { date: '7月3日', localTime: '13:00', venueKey: 'AT&T体育场' },
   ]
 
   for (let i = 0; i < r32Schedule.length; i++) {
@@ -406,7 +406,7 @@ function buildAllMatches(): Match[] {
     // Match 94: Match 81 winner vs Match 82 winner — July 6, 17:00 UTC-7, Lumen Field
     { id: 'r16-5', round: 'r16', date: '7月6日', localTime: '17:00', venueKey: '流明球场' },
     // Match 95: Match 86 winner vs Match 88 winner — July 7, 12:00 UTC-4, Mercedes-Benz Stadium
-    { id: 'r16-6', round: 'r16', date: '7月7日', localTime: '12:00', venueKey: '梅赛德斯-宾士体育场' },
+    { id: 'r16-6', round: 'r16', date: '7月7日', localTime: '12:00', venueKey: '梅赛德斯-奔驰体育场' },
     // Match 96: Match 85 winner vs Match 87 winner — July 7, 13:00 UTC-7, BC Place
     { id: 'r16-7', round: 'r16', date: '7月7日', localTime: '13:00', venueKey: '卑诗体育馆' },
 
@@ -424,7 +424,7 @@ function buildAllMatches(): Match[] {
     // Match 101: Match 97 winner vs Match 98 winner — July 14, 14:00 UTC-5, AT&T Stadium
     { id: 'sf-0', round: 'sf', date: '7月14日', localTime: '14:00', venueKey: 'AT&T体育场' },
     // Match 102: Match 99 winner vs Match 100 winner — July 15, 15:00 UTC-4, Mercedes-Benz Stadium
-    { id: 'sf-1', round: 'sf', date: '7月15日', localTime: '15:00', venueKey: '梅赛德斯-宾士体育场' },
+    { id: 'sf-1', round: 'sf', date: '7月15日', localTime: '15:00', venueKey: '梅赛德斯-奔驰体育场' },
 
     // Third place
     // Match 103: Match 101 loser vs Match 102 loser — July 18, 17:00 UTC-4, Hard Rock Stadium
