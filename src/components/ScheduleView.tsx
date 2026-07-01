@@ -14,7 +14,7 @@ import { teams, groupNames } from '../data/teams'
 import { computeScores, DEFAULT_WEIGHTS, type TeamScores } from '../engine/scorer'
 import { predictMostLikelyScore, predictScoreProbs, predictFullKnockoutResult } from '../engine/poisson'
 import { computeAllStandings } from '../engine/standings'
-import { LIVE_SCORES, FROZEN_PREDICTIONS, MATCH_NOTES, modelTag, KNOCKOUT_PREDICTIONS, knockoutModelTag } from '../data/results'
+import { LIVE_SCORES, FROZEN_PREDICTIONS, MATCH_NOTES, modelTag, KNOCKOUT_PREDICTIONS, KNOCKOUT_WINNERS, knockoutModelTag } from '../data/results'
 import { FlagImg } from './FlagImg'
 
 // ── Types ──────────────────────────────────────────────────
@@ -736,6 +736,92 @@ export function ScheduleView() {
     return result
   }, [])
 
+  // ── Resolve knockout round team matchups from R32 results ──
+  const koTeamIds = useMemo(() => {
+    const result = new Map<string, { home: string; away: string }>()
+
+    // Determine winner of an R32 match from live scores, predictions, or strength
+    const r32Winner = (r32Key: string): string | undefined => {
+      const pair = r32TeamIds.get(r32Key)
+      if (!pair) return undefined
+      const score = liveScores[r32Key]
+      if (score) {
+        const [hS, aS] = score.split('-').map(Number)
+        if (hS > aS) return pair.home
+        if (aS > hS) return pair.away
+        // Draw → penalty winner (default home)
+        const kw = KNOCKOUT_WINNERS[r32Key]
+        if (kw?.winner === 'away') return pair.away
+        return pair.home
+      }
+      // No result yet → use team strength
+      const hs = teamScoreMap.get(pair.home) ?? 50
+      const as = teamScoreMap.get(pair.away) ?? 50
+      return hs >= as ? pair.home : pair.away
+    }
+
+    // Winner of a previously-resolved KO match
+    const koWinner = (key: string): string | undefined => {
+      const pair = result.get(key)
+      if (!pair) return undefined
+      const score = liveScores[key]
+      if (score) {
+        const [hS, aS] = score.split('-').map(Number)
+        if (hS > aS) return pair.home
+        if (aS > hS) return pair.away
+        return pair.home
+      }
+      const hs = teamScoreMap.get(pair.home) ?? 50
+      const as = teamScoreMap.get(pair.away) ?? 50
+      return hs >= as ? pair.home : pair.away
+    }
+
+    // Official 2026 bracket topology: which r32 indices feed into each R16 match
+    const r16Topology: [string, string][] = [
+      [r32Winner('r32-1')!, r32Winner('r32-4')!],
+      [r32Winner('r32-0')!, r32Winner('r32-3')!],
+      [r32Winner('r32-2')!, r32Winner('r32-5')!],
+      [r32Winner('r32-6')!, r32Winner('r32-7')!],
+      [r32Winner('r32-10')!, r32Winner('r32-11')!],
+      [r32Winner('r32-8')!, r32Winner('r32-9')!],
+      [r32Winner('r32-13')!, r32Winner('r32-15')!],
+      [r32Winner('r32-12')!, r32Winner('r32-14')!],
+    ]
+    r16Topology.forEach(([home, away], i) => {
+      if (home && away) result.set(`r16-${i}`, { home, away })
+    })
+
+    // QF
+    const qfTopology: [string, string][] = [
+      [koWinner('r16-0')!, koWinner('r16-1')!],
+      [koWinner('r16-4')!, koWinner('r16-5')!],
+      [koWinner('r16-2')!, koWinner('r16-3')!],
+      [koWinner('r16-6')!, koWinner('r16-7')!],
+    ]
+    qfTopology.forEach(([home, away], i) => {
+      if (home && away) result.set(`qf-${i}`, { home, away })
+    })
+
+    // SF
+    const sfTopology: [string, string][] = [
+      [koWinner('qf-0')!, koWinner('qf-1')!],
+      [koWinner('qf-2')!, koWinner('qf-3')!],
+    ]
+    sfTopology.forEach(([home, away], i) => {
+      if (home && away) result.set(`sf-${i}`, { home, away })
+    })
+
+    // Final
+    const fA = koWinner('sf-0')
+    const fB = koWinner('sf-1')
+    if (fA && fB) {
+      result.set('final-0', { home: fA, away: fB })
+      result.set('3rd-0', { home: fB, away: fA }) // losers play 3rd place
+    }
+
+    return result
+  }, [r32TeamIds, liveScores, teamScoreMap])
+
   // ── Frozen predictions for matches within 2 days ──────
   const [frozenPreds, setFrozenPreds] = useState<Record<string, string>>(getFrozenPredictions)
   const [frozenTs, setFrozenTs] = useState<string>(getFrozenTimestamp)
@@ -889,10 +975,12 @@ export function ScheduleView() {
             </div>
             <div className="divide-y divide-slate-700/50">
               {matches.map(m => {
-                // For knockout matches with blank teams, fill from resolved r32 bracket
-                const r32Pair = !m.home && !m.away && m.round === 'r32' ? r32TeamIds.get(m.id) : undefined
-                const home = teamMap.get(r32Pair?.home ?? m.home)
-                const away = teamMap.get(r32Pair?.away ?? m.away)
+                // For knockout matches with blank teams, fill from resolved bracket
+                const koPair = !m.home && !m.away && (m.round === 'r32' || m.round === 'r16' || m.round === 'qf' || m.round === 'sf' || m.round === '3rd' || m.round === 'final')
+                  ? (m.round === 'r32' ? r32TeamIds.get(m.id) : koTeamIds.get(m.id))
+                  : undefined
+                const home = teamMap.get(koPair?.home ?? m.home)
+                const away = teamMap.get(koPair?.away ?? m.away)
                 const past = isMatchPast(m.dateNum)
                 const bjTime = localToBeijing(m.date, m.localTime, m.utcOffset)
                 const storedScore = liveScores[m.id]

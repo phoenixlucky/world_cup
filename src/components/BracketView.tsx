@@ -148,19 +148,30 @@ export function BracketView({ scores, standings }: Props) {
 
     const r32 = pairs.map(p => settlePair(p[0], p[1], true))
 
-    // Subsequent rounds: winners face each other in bracket order
-    const nextRound = (matches: MatchResult[]) => {
-      const next: MatchResult[] = []
-      for (let i = 0; i < matches.length; i += 2) {
-        const a = matches[i]; const b = matches[i + 1]
-        if (!a || !b) continue
-        const h = smap.get(a.winner); const aw = smap.get(b.winner)
-        if (h && aw) next.push(settlePair(h, aw, false))
-      }
-      return next
-    }
+    // Official 2026 bracket topology: which r32 indices feed into each R16 match
+    const r16Topology: [number, number][] = [
+      [1, 4], [0, 3], [2, 5], [6, 7],
+      [10, 11], [8, 9], [13, 15], [12, 14],
+    ]
+    const qfTopology: [number, number][] = [[0, 1], [4, 5], [2, 3], [6, 7]]
+    const sfTopology: [number, number][] = [[0, 1], [2, 3]]
 
-    return [r32, nextRound(r32), nextRound(nextRound(r32)), nextRound(nextRound(nextRound(r32))), nextRound(nextRound(nextRound(nextRound(r32))))].filter(r => r.length > 0)
+    // Build subsequent rounds by applying the bracket topology
+    const resolveRound = (prev: MatchResult[], topo: [number, number][]) =>
+      topo.map(([aIdx, bIdx]) => {
+        const a = prev[aIdx]; const b = prev[bIdx]
+        if (!a || !b) return null
+        const h = smap.get(a.winner); const aw = smap.get(b.winner)
+        if (!h || !aw) return null
+        return settlePair(h, aw, false)
+      }).filter(Boolean) as MatchResult[]
+
+    const r16 = resolveRound(r32, r16Topology)
+    const qf = resolveRound(r16, qfTopology)
+    const sf = resolveRound(qf, sfTopology)
+    const final = resolveRound(sf, [[0, 1]])
+
+    return [r32, r16, qf, sf, final].filter(r => r.length > 0)
   }, [scores, standings])
 
   const roundNames = ['32 强', '16 强', '四分之一决赛', '半决赛', '决赛']
