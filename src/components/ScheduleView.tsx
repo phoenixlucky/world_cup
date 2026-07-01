@@ -360,10 +360,10 @@ function buildAllMatches(): Match[] {
     { date: '7月1日', localTime: '17:00', venueKey: '李维斯体育场' },
     // Match 82: Belgium vs Senegal — July 1, 13:00 UTC-7, Lumen Field
     { date: '7月1日', localTime: '13:00', venueKey: '流明球场' },
-    // Match 83: Portugal vs Croatia — July 2, 12:00 UTC-7, SoFi Stadium
-    { date: '7月2日', localTime: '12:00', venueKey: 'SoFi体育场' },
-    // Match 84: Spain vs Austria — July 2, 19:00 UTC-4, BMO Field
+    // Match 83: Portugal vs Croatia — July 2, 19:00 UTC-4, BMO Field
     { date: '7月2日', localTime: '19:00', venueKey: 'BMO球场' },
+    // Match 84: Spain vs Austria — July 2, 12:00 UTC-7, SoFi Stadium
+    { date: '7月2日', localTime: '12:00', venueKey: 'SoFi体育场' },
     // Match 85: Switzerland vs Algeria — July 2, 20:00 UTC-7, BC Place
     { date: '7月2日', localTime: '20:00', venueKey: '卑诗体育馆' },
     // Match 86: Argentina vs Cape Verde — July 3, 18:00 UTC-4, Hard Rock Stadium
