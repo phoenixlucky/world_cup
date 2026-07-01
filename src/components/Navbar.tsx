@@ -9,7 +9,6 @@ const links = [
   { to: '/', label: '📊 排名', title: '综合评分排行榜' },
   { to: '/groups', label: '📋 小组赛', title: '12 小组对阵' },
   { to: '/knockout', label: '🏆 淘汰赛', title: '32 强晋级树' },
-  { to: '/round32', label: '⚔️ 32强赛程', title: '32 强淘汰赛对阵' },
   { to: '/prediction', label: '🔮 冠军预测', title: '蒙特卡洛夺冠概率' },
   { to: '/schedule', label: '📅 赛程', title: '比赛日程查询' },
   { to: '/accuracy', label: '📊 准确性', title: '预测准确性统计' },

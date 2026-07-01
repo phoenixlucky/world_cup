@@ -63,7 +63,7 @@ for (const [matchId, g] of Object.entries(thirdGroupMap)) {
   if (third) assigned.set(Number(matchId), third)
 }
 
-// 3. Define R32 matchups (same as Round32View)
+// 3. Define R32 matchups (same as BracketView / ScheduleView)
 const matchDefs: Record<number, [string, string]> = {
   73: ['A2', 'B2'],
   74: ['E1', assigned.get(74)?.teamId ?? ''],

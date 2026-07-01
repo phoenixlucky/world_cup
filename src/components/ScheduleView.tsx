@@ -356,21 +356,21 @@ function buildAllMatches(): Match[] {
     { date: '6月30日', localTime: '19:00', venueKey: '阿兹特克体育场' },
     // Match 80: England vs DR Congo — July 1, 12:00 UTC-4, Mercedes-Benz Stadium
     { date: '7月1日', localTime: '12:00', venueKey: '梅赛德斯-宾士体育场' },
-    // Match 82: Belgium vs Senegal — July 1, 13:00 UTC-7, Lumen Field
-    { date: '7月1日', localTime: '13:00', venueKey: '流明球场' },
     // Match 81: USA vs Bosnia — July 1, 17:00 UTC-7, Levi's Stadium
     { date: '7月1日', localTime: '17:00', venueKey: '李维斯体育场' },
-    // Match 84: Spain vs Austria — July 2, 12:00 UTC-7, SoFi Stadium
+    // Match 82: Belgium vs Senegal — July 1, 13:00 UTC-7, Lumen Field
+    { date: '7月1日', localTime: '13:00', venueKey: '流明球场' },
+    // Match 83: Portugal vs Croatia — July 2, 12:00 UTC-7, SoFi Stadium
     { date: '7月2日', localTime: '12:00', venueKey: 'SoFi体育场' },
-    // Match 83: Portugal vs Croatia — July 2, 19:00 UTC-4, BMO Field
+    // Match 84: Spain vs Austria — July 2, 19:00 UTC-4, BMO Field
     { date: '7月2日', localTime: '19:00', venueKey: 'BMO球场' },
     // Match 85: Switzerland vs Algeria — July 2, 20:00 UTC-7, BC Place
     { date: '7月2日', localTime: '20:00', venueKey: '卑诗体育馆' },
-    // Match 88: Australia vs Egypt — July 3, 13:00 UTC-5, AT&T Stadium
+    // Match 86: Argentina vs Cape Verde — July 3, 13:00 UTC-5, AT&T Stadium
     { date: '7月3日', localTime: '13:00', venueKey: 'AT&T体育场' },
-    // Match 86: Argentina vs Cape Verde — July 3, 18:00 UTC-4, Hard Rock Stadium
+    // Match 87: Colombia vs Ghana — July 3, 18:00 UTC-4, Hard Rock Stadium
     { date: '7月3日', localTime: '18:00', venueKey: '硬石体育场' },
-    // Match 87: Colombia vs Ghana — July 3, 20:30 UTC-5, Arrowhead Stadium
+    // Match 88: Australia vs Egypt — July 3, 20:30 UTC-5, Arrowhead Stadium
     { date: '7月3日', localTime: '20:30', venueKey: '箭頭体育场' },
   ]
 
@@ -390,32 +390,64 @@ function buildAllMatches(): Match[] {
     })
   }
 
-  // ── Other knockout rounds (generic) ───────────────────
-  const koSchedule: { round: Match['round']; dates: string[]; count: number }[] = [
-    { round: 'r16', dates: ['7月3日','7月4日','7月5日','7月6日'], count: 8 },
-    { round: 'qf',  dates: ['7月9日','7月10日'], count: 4 },
-    { round: 'sf',  dates: ['7月13日','7月14日'], count: 2 },
-    { round: '3rd', dates: ['7月18日'], count: 1 },
-    { round: 'final', dates: ['7月19日'], count: 1 },
+  // ── Round of 16 through Final (official FIFA schedule) ──
+  const koSchedule: { id: string; round: Match['round']; date: string; localTime: string; venueKey: string }[] = [
+    // Round of 16
+    // Match 90: Canada vs Morocco — July 4, 12:00 UTC-5, NRG Stadium
+    { id: 'r16-0', round: 'r16', date: '7月4日', localTime: '12:00', venueKey: 'NRG体育场' },
+    // Match 89: Paraguay vs France — July 4, 17:00 UTC-4, Lincoln Financial Field
+    { id: 'r16-1', round: 'r16', date: '7月4日', localTime: '17:00', venueKey: '林肯金融球场' },
+    // Match 91: Brazil vs Norway — July 5, 16:00 UTC-4, MetLife Stadium
+    { id: 'r16-2', round: 'r16', date: '7月5日', localTime: '16:00', venueKey: '大都会人寿体育场' },
+    // Match 92: Mexico vs Match 80 winner — July 5, 18:00 UTC-6, Estadio Azteca
+    { id: 'r16-3', round: 'r16', date: '7月5日', localTime: '18:00', venueKey: '阿兹特克体育场' },
+    // Match 93: Match 83 winner vs Match 84 winner — July 6, 14:00 UTC-5, AT&T Stadium
+    { id: 'r16-4', round: 'r16', date: '7月6日', localTime: '14:00', venueKey: 'AT&T体育场' },
+    // Match 94: Match 81 winner vs Match 82 winner — July 6, 17:00 UTC-7, Lumen Field
+    { id: 'r16-5', round: 'r16', date: '7月6日', localTime: '17:00', venueKey: '流明球场' },
+    // Match 95: Match 86 winner vs Match 88 winner — July 7, 12:00 UTC-4, Mercedes-Benz Stadium
+    { id: 'r16-6', round: 'r16', date: '7月7日', localTime: '12:00', venueKey: '梅赛德斯-宾士体育场' },
+    // Match 96: Match 85 winner vs Match 87 winner — July 7, 13:00 UTC-7, BC Place
+    { id: 'r16-7', round: 'r16', date: '7月7日', localTime: '13:00', venueKey: '卑诗体育馆' },
+
+    // Quarter-finals
+    // Match 97: Match 89 winner vs Match 90 winner — July 9, 16:00 UTC-4, Gillette Stadium
+    { id: 'qf-0', round: 'qf', date: '7月9日', localTime: '16:00', venueKey: '吉列体育场' },
+    // Match 98: Match 93 winner vs Match 94 winner — July 10, 12:00 UTC-7, SoFi Stadium
+    { id: 'qf-1', round: 'qf', date: '7月10日', localTime: '12:00', venueKey: 'SoFi体育场' },
+    // Match 99: Match 91 winner vs Match 92 winner — July 11, 17:00 UTC-4, Hard Rock Stadium
+    { id: 'qf-2', round: 'qf', date: '7月11日', localTime: '17:00', venueKey: '硬石体育场' },
+    // Match 100: Match 95 winner vs Match 96 winner — July 11, 20:00 UTC-5, Arrowhead Stadium
+    { id: 'qf-3', round: 'qf', date: '7月11日', localTime: '20:00', venueKey: '箭頭体育场' },
+
+    // Semi-finals
+    // Match 101: Match 97 winner vs Match 98 winner — July 14, 14:00 UTC-5, AT&T Stadium
+    { id: 'sf-0', round: 'sf', date: '7月14日', localTime: '14:00', venueKey: 'AT&T体育场' },
+    // Match 102: Match 99 winner vs Match 100 winner — July 15, 15:00 UTC-4, Mercedes-Benz Stadium
+    { id: 'sf-1', round: 'sf', date: '7月15日', localTime: '15:00', venueKey: '梅赛德斯-宾士体育场' },
+
+    // Third place
+    // Match 103: Match 101 loser vs Match 102 loser — July 18, 17:00 UTC-4, Hard Rock Stadium
+    { id: '3rd-0', round: '3rd', date: '7月18日', localTime: '17:00', venueKey: '硬石体育场' },
+
+    // Final
+    // Match 104: Match 101 winner vs Match 102 winner — July 19, 15:00 UTC-4, MetLife Stadium
+    { id: 'final-0', round: 'final', date: '7月19日', localTime: '15:00', venueKey: '大都会人寿体育场' },
   ]
 
-  for (const { round, dates, count } of koSchedule) {
-    for (let i = 0; i < count; i++) {
-      const date = dates[i % dates.length]
-      const vk = allVenueKeys[i % allVenueKeys.length]
-      const vi = venueMap[vk]
-      matches.push({
-        id: `${round}-${i}`,
-        date,
-        dateNum: parseDateNum(date),
-        localTime: `${18 + (i % 3) * 2}:00`,
-        utcOffset: vi.utcOffset,
-        home: '', away: '',
-        venue: vi.venue,
-        city: vi.city,
-        round,
-      })
-    }
+  for (const { id, round, date, localTime, venueKey } of koSchedule) {
+    const vi = venueMap[venueKey]
+    matches.push({
+      id,
+      date,
+      dateNum: parseDateNum(date),
+      localTime,
+      utcOffset: vi.utcOffset,
+      home: '', away: '',
+      venue: vi.venue,
+      city: vi.city,
+      round,
+    })
   }
 
   // ── Closing Ceremony ────────────────────────────────
@@ -627,7 +659,7 @@ export function ScheduleView() {
     liveScores = { ...LIVE_SCORES, ...liveScores }
     const standings = computeAllStandings(sc, liveScores)
 
-    // Bracket resolution (same logic as Round32View / BracketView)
+    // Bracket resolution (same logic as BracketView)
     const groups = new Map<string, TeamScores[]>()
     for (const s of sc) {
       if (!groups.has(s.group)) groups.set(s.group, [])
