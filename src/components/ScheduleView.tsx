@@ -14,7 +14,7 @@ import { teams, groupNames } from '../data/teams'
 import { computeScores, DEFAULT_WEIGHTS, type TeamScores } from '../engine/scorer'
 import { predictMostLikelyScore, predictScoreProbs, predictFullKnockoutResult } from '../engine/poisson'
 import { computeAllStandings } from '../engine/standings'
-import { LIVE_SCORES, FROZEN_PREDICTIONS, MATCH_NOTES, modelTag, KNOCKOUT_PREDICTIONS, KNOCKOUT_WINNERS, knockoutModelTag } from '../data/results'
+import { LIVE_SCORES, FROZEN_PREDICTIONS, MATCH_NOTES, modelTag, KNOCKOUT_PREDICTIONS, KNOCKOUT_WINNERS, R32_PENALTY_WINNERS, knockoutModelTag } from '../data/results'
 import { FlagImg } from './FlagImg'
 
 // ── Types ──────────────────────────────────────────────────
@@ -749,9 +749,9 @@ export function ScheduleView() {
         const [hS, aS] = score.split('-').map(Number)
         if (hS > aS) return pair.home
         if (aS > hS) return pair.away
-        // Draw → penalty winner (default home)
-        const kw = KNOCKOUT_WINNERS[r32Key]
-        if (kw?.winner === 'away') return pair.away
+        // Draw → penalty winner (check actual first, then prediction)
+        const penWinner = R32_PENALTY_WINNERS[r32Key] || KNOCKOUT_WINNERS[r32Key]?.winner
+        if (penWinner === 'away') return pair.away
         return pair.home
       }
       // No result yet → use team strength
