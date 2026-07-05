@@ -116,29 +116,27 @@ export function BracketView({ scores, standings }: Props) {
     }
 
     // Resolve winner for a given pair
-    const settlePair = (home: TeamScores, away: TeamScores, isR32: boolean): MatchResult => {
+    const settlePair = (home: TeamScores, away: TeamScores, roundKey: string, matchIdx: number): MatchResult => {
       let winner: string
       let label: string
       let actualScore: string | undefined
 
-      if (isR32) {
-        const key = `${home.teamId}-${away.teamId}`
-        const r32id = pairToR32.get(key) || pairToR32.get(`${away.teamId}-${home.teamId}`)
-        if (r32id && LIVE_SCORES[r32id]) {
-          actualScore = LIVE_SCORES[r32id]
-          const [hS, aS] = actualScore.split('-').map(Number)
-          if (hS > aS) winner = home.teamId
-          else if (aS > hS) winner = away.teamId
-          else {
-            // 平局 → 点球决胜：查实际点球胜方，没有则用预测
-            const penWinner = R32_PENALTY_WINNERS[r32id] || KNOCKOUT_WINNERS[r32id]?.winner
-            winner = penWinner === 'home' ? home.teamId : away.teamId
-          }
-          label = actualScore
-        } else {
-          winner = home.total >= away.total ? home.teamId : away.teamId
-          label = '预测'
+      // Check for actual result from LIVE_SCORES
+      const scoreKey = roundKey === 'r32'
+        ? (pairToR32.get(`${home.teamId}-${away.teamId}`) || pairToR32.get(`${away.teamId}-${home.teamId}`))
+        : `${roundKey}-${matchIdx}`
+      const storedScore = LIVE_SCORES[scoreKey || '']
+      if (storedScore) {
+        actualScore = storedScore
+        const [hS, aS] = actualScore.split('-').map(Number)
+        if (hS > aS) winner = home.teamId
+        else if (aS > hS) winner = away.teamId
+        else {
+          // 平局 → 点球决胜：查实际点球胜方
+          const penWinner = roundKey === 'r32' ? (R32_PENALTY_WINNERS[scoreKey!] || KNOCKOUT_WINNERS[scoreKey!]?.winner) : undefined
+          winner = penWinner === 'away' ? away.teamId : home.teamId
         }
+        label = actualScore
       } else {
         winner = home.total >= away.total ? home.teamId : away.teamId
         label = '预测'
@@ -146,7 +144,7 @@ export function BracketView({ scores, standings }: Props) {
       return { home, away, winner, label, actualScore }
     }
 
-    const r32 = pairs.map(p => settlePair(p[0], p[1], true))
+    const r32 = pairs.map((p, i) => settlePair(p[0], p[1], 'r32', i))
 
     // Official 2026 bracket topology: which r32 indices feed into each R16 match
     const r16Topology: [number, number][] = [
@@ -157,19 +155,19 @@ export function BracketView({ scores, standings }: Props) {
     const sfTopology: [number, number][] = [[0, 1], [2, 3]]
 
     // Build subsequent rounds by applying the bracket topology
-    const resolveRound = (prev: MatchResult[], topo: [number, number][]) =>
-      topo.map(([aIdx, bIdx]) => {
+    const resolveRound = (prev: MatchResult[], topo: [number, number][], roundKey: string) =>
+      topo.map(([aIdx, bIdx], i) => {
         const a = prev[aIdx]; const b = prev[bIdx]
         if (!a || !b) return null
         const h = smap.get(a.winner); const aw = smap.get(b.winner)
         if (!h || !aw) return null
-        return settlePair(h, aw, false)
+        return settlePair(h, aw, roundKey, i)
       }).filter(Boolean) as MatchResult[]
 
-    const r16 = resolveRound(r32, r16Topology)
-    const qf = resolveRound(r16, qfTopology)
-    const sf = resolveRound(qf, sfTopology)
-    const final = resolveRound(sf, [[0, 1]])
+    const r16 = resolveRound(r32, r16Topology, 'r16')
+    const qf = resolveRound(r16, qfTopology, 'qf')
+    const sf = resolveRound(qf, sfTopology, 'sf')
+    const final = resolveRound(sf, [[0, 1]], 'final')
 
     return [r32, r16, qf, sf, final].filter(r => r.length > 0)
   }, [scores, standings])
