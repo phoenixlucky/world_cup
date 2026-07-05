@@ -184,7 +184,6 @@ export function BracketView({ scores, standings }: Props) {
     <div className="space-y-8">
       {bracket.map((round, ri) => {
         const isLast = ri === bracket.length - 1
-        const isR32 = ri === 0
 
         return (
           <div key={ri} className="bg-slate-800/60 border border-slate-700 rounded-xl p-4">
@@ -196,64 +195,78 @@ export function BracketView({ scores, standings }: Props) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-              {isR32
-                ? round.map((m: MatchResult, i: number) => {
-                    const homeWon = m.winner === m.home.teamId
-                    return (
-                      <div key={`r32-${i}`} className="bg-slate-900/40 border border-slate-700 rounded-lg px-3 py-2">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className={`flex items-center gap-1.5 min-w-0 flex-1 ${homeWon ? 'text-green-400' : 'text-white/70'}`}>
-                            <FlagImg code={m.home.flagCode} size={18} />
-                            <span className="text-xs font-medium truncate">{m.home.teamNameCN}</span>
-                            {homeWon && <span className="text-green-400 text-[10px]">✓</span>}
-                          </span>
+              {round.map((m: MatchResult, i: number) => {
+                const homeWon = m.winner === m.home.teamId
+                // Determine if this match has an actual result
+                const isCompleted = !!m.actualScore
+                return (
+                  <div key={`r${ri}-${i}`}
+                    className={`rounded-lg border px-3 py-2.5 transition-colors ${
+                      isLast
+                        ? 'bg-gradient-to-br from-yellow-600/15 to-amber-600/10 border-yellow-500/40'
+                        : isCompleted
+                          ? 'bg-green-900/20 border-green-700/40'
+                          : 'bg-slate-900/40 border-slate-700 hover:border-slate-500'
+                    }`}
+                  >
+                    {/* Home team */}
+                    <div className={`flex items-center gap-1.5 mb-1 ${homeWon ? '' : 'opacity-50'}`}>
+                      <FlagImg code={m.home.flagCode} size={16} />
+                      <span className="text-xs font-medium truncate flex-1">{m.home.teamNameCN}</span>
+                      {homeWon && <span className="text-green-400 text-[10px] shrink-0">✓</span>}
+                      <span className="text-[10px] text-slate-500 font-mono">{m.home.total.toFixed(0)}</span>
+                    </div>
 
-                          {m.actualScore
-                            ? <span className="font-bold text-sm font-mono mx-1.5 shrink-0 text-green-400">{m.actualScore}</span>
-                            : <span className="text-slate-600 text-xs font-mono mx-1.5 shrink-0">vs</span>
-                          }
+                    {/* Scoreline */}
+                    <div className="flex items-center justify-center gap-2 my-1.5">
+                      <div className="h-px flex-1 bg-slate-700/50" />
+                      {isCompleted
+                        ? <span className="font-bold text-sm font-mono text-green-400 px-2">{m.actualScore}</span>
+                        : <span className="text-xs font-mono text-slate-500 px-2">vs</span>
+                      }
+                      <div className="h-px flex-1 bg-slate-700/50" />
+                    </div>
 
-                          <span className={`flex items-center gap-1.5 min-w-0 flex-1 justify-end ${!homeWon ? 'text-green-400' : 'text-white/70'}`}>
-                            {!homeWon && <span className="text-green-400 text-[10px]">✓</span>}
-                            <span className="text-xs font-medium truncate">{m.away.teamNameCN}</span>
-                            <FlagImg code={m.away.flagCode} size={18} />
-                          </span>
-                        </div>
-                        <div className="flex justify-between mt-1 text-[10px] text-slate-600 font-mono">
-                          <span>{m.home.total.toFixed(0)}</span>
-                          <span>{m.actualScore ? '实际比分' : m.label}</span>
-                          <span>{m.away.total.toFixed(0)}</span>
-                        </div>
+                    {/* Away team */}
+                    <div className={`flex items-center gap-1.5 mt-1 ${!homeWon ? '' : 'opacity-50'}`}>
+                      <FlagImg code={m.away.flagCode} size={16} />
+                      <span className="text-xs font-medium truncate flex-1">{m.away.teamNameCN}</span>
+                      {!homeWon && <span className="text-green-400 text-[10px] shrink-0">✓</span>}
+                      <span className="text-[10px] text-slate-500 font-mono">{m.away.total.toFixed(0)}</span>
+                    </div>
+
+                    {/* Prediction comparison for completed matches */}
+                    {isCompleted && (
+                      <div className="mt-1.5 text-[10px] text-slate-500 text-center font-mono">
+                        实际比分
                       </div>
-                    )
-                  })
-                : round.map((m: MatchResult, i: number) => {
-                    const t = smap.get(m.winner)
-                    if (!t) return null
-                    return (
-                      <div key={`r${ri}-${i}`}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
-                          ri + 1 < bracket.length
-                            ? 'bg-green-900/20 border-green-700/50'
-                            : 'bg-gradient-to-r from-yellow-600/20 to-amber-600/20 border-yellow-500/50'
-                        }`}
-                      >
-                        <FlagImg code={t.flagCode} size={22} />
-                        <div className="min-w-0 flex-1">
-                          <span className="text-sm font-medium text-white truncate block">{t.teamNameCN}</span>
-                          <span className="text-[10px] text-slate-500 font-mono">{m.home.teamNameCN} vs {m.away.teamNameCN}</span>
-                        </div>
-                        <span className="text-xs font-mono font-bold text-slate-400">{t.total.toFixed(0)}</span>
-                        {ri + 1 < bracket.length && <span className="text-green-400 text-xs ml-1">✓</span>}
-                        {ri + 1 >= bracket.length && <span className="text-yellow-400 text-xs ml-1">🏆</span>}
-                      </div>
-                    )
-                  })
-              }
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         )
       })}
+
+      {/* Champion callout */}
+      {bracket.length > 0 && (() => {
+        const lastRound = bracket[bracket.length - 1]
+        if (lastRound.length !== 1) return null
+        const finalM = lastRound[0]
+        if (!finalM.winner) return null
+        const c = smap.get(finalM.winner)
+        return c ? (
+          <div className="bg-gradient-to-r from-yellow-600/20 via-amber-600/15 to-yellow-600/20 border border-yellow-500/40 rounded-xl p-5 text-center">
+            <p className="text-sm text-yellow-400 mb-2">🏆 预测冠军</p>
+            <div className="flex items-center justify-center gap-3">
+              <FlagImg code={c.flagCode} size={32} />
+              <span className="text-xl font-bold text-white">{c.teamNameCN}</span>
+            </div>
+            <p className="text-slate-400 text-xs mt-1">{c.teamName} — 综合评分 {c.total.toFixed(1)}</p>
+          </div>
+        ) : null
+      })()}
     </div>
   )
 }
