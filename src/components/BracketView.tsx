@@ -148,7 +148,7 @@ export function BracketView({ scores, standings }: Props) {
 
     // Official 2026 bracket topology: which r32 indices feed into each R16 match
     const r16Topology: [number, number][] = [
-      [1, 4], [0, 2], [3, 5], [6, 7],
+      [0, 2], [1, 4], [3, 5], [6, 7],
       [10, 11], [8, 9], [13, 15], [12, 14],
     ]
     const qfTopology: [number, number][] = [[0, 1], [4, 5], [2, 3], [6, 7]]
