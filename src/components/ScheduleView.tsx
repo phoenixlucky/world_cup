@@ -1041,7 +1041,7 @@ export function ScheduleView() {
                       {predStr && <span className="flex items-center gap-1 text-orange-400 text-xs font-medium whitespace-nowrap">
                         {comparison && <span className={comparison.color}>{comparison.icon}</span>}
                         预测 {predStr}
-                        {home && away && (() => {
+                        {home && away && !predStr && (() => {
                           const sp = predictScoreProbsW(home.id, away.id, teamScoreMap)
                           return sp.bestOverallScore[0] !== sp.score[0] || sp.bestOverallScore[1] !== sp.score[1]
                             ? <span className="text-orange-400">({sp.bestOverallScore[0]}-{sp.bestOverallScore[1]})</span>
