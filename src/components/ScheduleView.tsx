@@ -811,12 +811,22 @@ export function ScheduleView() {
       if (home && away) result.set(`sf-${i}`, { home, away })
     })
 
+    // Reverse: get loser of a KO match (for 3rd place)
+    const loserOf = (key: string): string | undefined => {
+      const pair = result.get(key)
+      if (!pair) return undefined
+      const winner = koWinner(key)
+      if (winner === pair.home) return pair.away
+      if (winner === pair.away) return pair.home
+      return undefined
+    }
+
     // Final
     const fA = koWinner('sf-0')
     const fB = koWinner('sf-1')
     if (fA && fB) {
       result.set('final-0', { home: fA, away: fB })
-      result.set('3rd-0', { home: fB, away: fA }) // losers play 3rd place
+      result.set('3rd-0', { home: loserOf('sf-0'), away: loserOf('sf-1') })
     }
 
     return result
