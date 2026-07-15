@@ -826,7 +826,8 @@ export function ScheduleView() {
     const fB = koWinner('sf-1')
     if (fA && fB) {
       result.set('final-0', { home: fA, away: fB })
-      result.set('3rd-0', { home: loserOf('sf-0'), away: loserOf('sf-1') })
+      const lA = loserOf('sf-0'); const lB = loserOf('sf-1')
+      if (lA && lB) result.set('3rd-0', { home: lA, away: lB })
     }
 
     return result
